@@ -1,0 +1,43 @@
+# Python
+*.pyc
+*.pyo
+*.~
+__pycache__/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Poetry
+.venv/
+
+# Environment
+.env
+!.env.sample
+
+# IDEs and editors
+.vscode/
+
+# VS Code Extension
+.codegpt
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+vector_db/
+
+#Promptfoo
+promptfoo/output/
+promptfoo-errors.log
+
+# Sqlite
+*.sqlite*
+
+db/
+
+.deepeval
