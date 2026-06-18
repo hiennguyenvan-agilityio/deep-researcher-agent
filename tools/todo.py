@@ -1,23 +1,13 @@
-from typing import Annotated, Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict
+import json
 
-from langchain.messages import ToolMessage
-from langchain.tools import InjectedToolCallId, tool
+from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
+
+from resources.backend import get_filesystem_backend
 
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
-
-Only use this tool if you think it will be helpful in staying organized. If the user's request is trivial and takes less than 3 steps, it is better to NOT use this tool and just do the task directly.
-
-## When to Use This Tool
-
-Use this tool in these scenarios:
-
-1. Complex multi-step tasks - When a task requires 3 or more distinct steps or actions
-2. Non-trivial and complex tasks - Tasks that require careful planning or multiple operations
-3. User explicitly requests todo list - When the user directly asks you to use the todo list
-4. User provides multiple tasks - When users provide a list of things to be done (numbered or comma-separated)
-5. The plan may need future revisions or updates based on results from the first few steps
 
 ## How to Use This Tool
 
@@ -25,14 +15,6 @@ Use this tool in these scenarios:
 2. After completing a task - Mark it as completed and add any new follow-up tasks discovered during implementation.
 3. You can also update future tasks, such as deleting them if they are no longer necessary, or adding new tasks that are necessary. Don't change previously completed tasks.
 4. You can make several updates to the todo list at once. For example, when you complete a task, you can mark the next task you need to start as in_progress.
-
-## When NOT to Use This Tool
-
-It is important to skip using this tool when:
-1. There is only a single, straightforward task
-2. The task is trivial and tracking it provides no benefit
-3. The task can be completed in less than 3 trivial steps
-4. The task is purely conversational or informational
 
 ## Task States and Management
 
@@ -84,13 +66,37 @@ class Todo(TypedDict):
 
 @tool(description=WRITE_TODOS_TOOL_DESCRIPTION)
 def write_todos(
-    todos: list[Todo], tool_call_id: Annotated[str, InjectedToolCallId]
+    todos: list[Todo],
+    runtime: ToolRuntime,
 ) -> Command[Any]:
     """Create and manage a structured task list for your current work session."""
-    # TODO: Update using VFS instead of state
-    return Command(
-        update={
-            "todos": todos,
-            "messages": [ToolMessage(f"Updated todo list to {todos}", tool_call_id=tool_call_id)],
-        }
-    )
+    serialized = json.dumps(todos)
+
+    thread_id = runtime.execution_info.thread_id
+
+    fileSystemBackend = get_filesystem_backend()
+
+    write_result = fileSystemBackend.write(f"todos_{thread_id}.json", serialized)
+
+    print("write_result", write_result)
+    
+    return
+
+@tool
+def completed_task(
+    todo: Todo,
+    runtime: ToolRuntime,
+) -> Command[Any]:
+    """Update task to completed"""
+    old_todo = json.dumps(todo)
+    updated_todo = json.dumps({**todo, "status": "completed"})
+
+    thread_id = runtime.execution_info.thread_id
+
+    fileSystemBackend = get_filesystem_backend()
+
+    edit_result = fileSystemBackend.edit(f"todos_{thread_id}.json", old_string=old_todo, new_string=updated_todo)
+
+    print("edit_result", edit_result)
+    
+    return
