@@ -1,6 +1,5 @@
-from agent import deep_researcher
+from agents.deep_researcher.main import deep_researcher
 from dotenv import load_dotenv
-from IPython.display import display, Markdown
 
 load_dotenv()
 

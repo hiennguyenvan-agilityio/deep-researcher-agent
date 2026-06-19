@@ -5,7 +5,7 @@ from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
 from resources.backend import get_filesystem_backend
-
+from resources.vitual_file_system import get_vfs
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
 
@@ -54,6 +54,7 @@ Remember: If you only need to make a few tool calls to complete a task, and it i
 
 `write_todos` tracks your work; it does not deliver the answer. Whatever the user asked for — computations, summaries, comparisons, data — must appear as text content in a message after your final `write_todos` call. Marking the last todo complete is not itself an answer to the user."""
 
+
 class Todo(TypedDict):
     """A single todo item with content and status."""
 
@@ -71,15 +72,11 @@ def write_todos(
 ) -> Command[Any]:
     """Create and manage a structured task list for your current work session."""
     serialized = json.dumps(todos)
-
     thread_id = runtime.execution_info.thread_id
+    vfs = get_vfs()
 
-    fileSystemBackend = get_filesystem_backend()
+    vfs.writetext(f"todos_{thread_id}.json", serialized)
 
-    write_result = fileSystemBackend.write(f"todos_{thread_id}.json", serialized)
-
-    print("write_result", write_result)
-    
     return
 
 @tool
@@ -92,11 +89,12 @@ def completed_task(
     updated_todo = json.dumps({**todo, "status": "completed"})
 
     thread_id = runtime.execution_info.thread_id
-
-    fileSystemBackend = get_filesystem_backend()
-
-    edit_result = fileSystemBackend.edit(f"todos_{thread_id}.json", old_string=old_todo, new_string=updated_todo)
-
-    print("edit_result", edit_result)
+    path = f"todos_{thread_id}.json"
+    vfs = get_vfs()
     
+    content = vfs.readtext(path)
+    new_content = content.replace(old_todo, updated_todo)
+    
+    vfs.writetext(path, new_content)
+
     return
