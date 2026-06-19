@@ -124,8 +124,6 @@ def verification_node(state: MessagesState, config: RunnableConfig):
 
     response = chain.invoke({"messages": state["messages"], "ai_response": ai_response})
 
-    print("final response", response)
-
     return {"messages": response}
 
 deep_researcher_builder = StateGraph(MessagesState)
