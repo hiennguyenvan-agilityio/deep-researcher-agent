@@ -4,7 +4,6 @@ import json
 from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
-from resources.backend import get_filesystem_backend
 from resources.vitual_file_system import get_vfs
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
