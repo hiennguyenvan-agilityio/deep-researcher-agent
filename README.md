@@ -46,3 +46,14 @@ cd ai-training/deep_researcher_agent
 
 - Duplicate the sample environment variables file `.env.sample` to `.env`.
 - Replace placeholder values with your actual environment variables (e.g., `OPENAI_API_KEY`, ...).
+
+### 4. Run the backend server
+
+Start the LangGraph development server:
+```bash
+langgraph dev
+```
+
+The server will be available at http://localhost:2024.
+
+You can then interact with the agent local server using [LangSmith Studio](https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024)
