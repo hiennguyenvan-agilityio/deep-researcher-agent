@@ -1,6 +1,5 @@
 import uuid
 
-from click import Command
 from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -92,11 +91,9 @@ def research_node(state: WorkerState, config: RunnableConfig):
         "type": "tool_call",
     }
 
-    return Command(
-        update={
-            "tmp_messages": [AIMessage(content="", tool_calls=[tool_call])]
-        }
-    )
+    return {
+        "tmp_messages": [AIMessage(content="", tool_calls=[tool_call])]
+    }
 
 def synthesis_node(state: AgentState, config: RunnableConfig):
     thread_id = config["configurable"]["thread_id"]
