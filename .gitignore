@@ -41,3 +41,4 @@ promptfoo-errors.log
 db/
 
 .deepeval
+.langgraph_api
