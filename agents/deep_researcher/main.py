@@ -1,5 +1,7 @@
+import os
 import json
 
+from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.runnables import RunnableConfig
@@ -7,11 +9,14 @@ from langgraph.types import Send
 
 from agents.deep_researcher.utils.nodes import finalize_node, gatekeeper_node, planning_node, research_node, synthesis_node, verification_node
 from agents.deep_researcher.utils.states import AgentState
+from resources.models import initialise_chat_model, initialise_reason_model
 from resources.vitual_file_system import get_vfs
 from tools.todo import completed_task, write_todos
 from utils.common import get_next_todo
 from functools import partial
 
+
+load_dotenv()
 
 def assign_task(_: AgentState, config: RunnableConfig):
     thread_id = config["configurable"]["thread_id"]
@@ -28,6 +33,12 @@ def assign_task(_: AgentState, config: RunnableConfig):
 
 def route(state: AgentState):
     return state["action"]
+
+reason_model_name = os.getenv("REASON_MODEL_NAME")
+chat_model_name = os.getenv("CHAT_MODEL_NAME")
+
+initialise_reason_model(reason_model_name)
+initialise_chat_model(chat_model_name)
 
 deep_researcher_builder = StateGraph(AgentState)
 
@@ -48,10 +59,9 @@ deep_researcher_builder.add_conditional_edges(
     route,
     {"refuse": END, "ask_user": END, "proceed": "planning"},
 )
-deep_researcher_builder.add_edge("planning", "tools")
 
 deep_researcher_builder.add_conditional_edges(
-    "tools",
+    "planning",
     assign_task,
     {"done": "synthesis", "research": "research"},
 )

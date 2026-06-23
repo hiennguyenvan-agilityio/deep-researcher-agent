@@ -1,24 +1,23 @@
 import uuid
 
-from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 
-from agents.deep_researcher.prompts import GATEKEEPER_PROMPT, PLANNER_PROMPT, RESERACHER_PROMPT, SYSTHESIS_PROMPT, VERIFICATION_PROMPT
+from agents.deep_researcher.prompts import GATEKEEPER_PROMPT, RESERACHER_PROMPT, SYSTHESIS_PROMPT, VERIFICATION_PROMPT
 from agents.deep_researcher.utils.states import AgentState, WorkerState
 from agents.deep_researcher.utils.structuted_outputs import GatekeeperOutput
+from resources.models import get_chat_model, get_reason_model
 from resources.vitual_file_system import get_vfs
 from tools.todo import write_todos
 from utils.common import get_text_from_llm_response
+from planner_agent.agent import planner_agent
 
 
 def gatekeeper_node(state: AgentState):
     """Perform safety/clarity/enhancement check and return structured decision."""
 
-    llm = init_chat_model(
-        model="google_genai:gemini-3.1-flash-lite-preview"
-    ).with_structured_output(GatekeeperOutput)
+    llm = get_reason_model().with_structured_output(GatekeeperOutput)
 
     prompt = ChatPromptTemplate([
         ("system", GATEKEEPER_PROMPT),
@@ -40,28 +39,12 @@ def gatekeeper_node(state: AgentState):
     return {"messages": AIMessage(content=message), "action": action}
 
 def planning_node(state: AgentState):
-    """Orchestrator that generates a plan for the researcher"""
+    planner_agent.invoke({"query": state["query"]})
 
-    # planner = init_chat_model(model="gpt-5.1").bind_tools([write_todos])
-    planner = init_chat_model(
-        model="google_genai:gemini-3.1-flash-lite-preview"
-    ).bind_tools([write_todos])
-
-    prompt = ChatPromptTemplate([
-        ("system", PLANNER_PROMPT),
-        ("placeholder", "{messages}"),
-    ])
-
-    chain = prompt | planner
-    response = chain.invoke(state)
-
-    return {
-        "tmp_messages": [response]
-    }
-
+    return
 
 def research_node(state: WorkerState, config: RunnableConfig):
-    llm = init_chat_model(model="google_genai:gemini-3.1-flash-lite-preview")
+    llm = get_chat_model()
 
     task = state["task"]
 
@@ -102,7 +85,7 @@ def synthesis_node(state: AgentState, config: RunnableConfig):
 
     research_note = vfs.readtext(research_node_path)
 
-    llm = init_chat_model(model="google_genai:gemini-3.1-flash-lite-preview")
+    llm = get_chat_model()
 
     prompt = ChatPromptTemplate([
         ("system", SYSTHESIS_PROMPT),
@@ -122,7 +105,7 @@ def synthesis_node(state: AgentState, config: RunnableConfig):
 
 def verification_node(state: AgentState, config: RunnableConfig):
     thread_id = config["configurable"]["thread_id"]
-    llm = init_chat_model(model="google_genai:gemini-3.1-flash-lite-preview").bind_tools([write_todos])
+    llm = get_reason_model().bind_tools([write_todos])
     vfs = get_vfs()
     ai_response = vfs.readtext(f"systhesis_{thread_id}.txt")
 

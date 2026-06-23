@@ -1,10 +1,3 @@
-PLANNER_PROMPT = (
-    "You are a research planner. Given the following user query, decompose it into a detailed, ordered checklist of steps required to produce a thorough answer.\n"
-    "You have access to the `write_todos` tool to help you manage and plan complex objectives.\n"
-    "Use this tool to ensure that you are tracking each necessary step.\n"
-    "This tool is very helpful for planning complex objectives, and for breaking down these larger complex objectives into smaller steps."
-)
-
 RESERACHER_PROMPT = (
     "You are a Deep Researcher. Your task is to execute the task: {task}"
 )
