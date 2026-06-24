@@ -1,0 +1,80 @@
+from langchain_core.prompts import ChatPromptTemplate
+
+from agents.deep_researcher.prompts import SYSTHESIS_PROMPT
+from agents.researcher.prompts import PLANNER_PROMPT
+from agents.researcher.utils.helper import completed_task
+from agents.researcher.utils.states import ResearchAgentState, WorkerState
+from resources.models import get_chat_model, get_reason_model
+from resources.vitual_file_system import get_vfs
+from tools.todo import write_todos
+from utils.common import get_text_from_llm_response
+from agents.worker.main import worker_agent
+from langchain_core.runnables import RunnableConfig
+
+
+def orchestrator(state: ResearchAgentState):
+    """Orchestrator that generates a plan for the researcher"""
+
+    llm = get_reason_model().bind_tools([write_todos])
+
+    prompt = ChatPromptTemplate(
+        [
+            ("system", PLANNER_PROMPT),
+            ("human", "{query}"),
+        ]
+    )
+
+    chain = prompt | llm
+    response = chain.invoke(state)
+
+    return {"messages": response}
+
+
+def worker(state: WorkerState, config: RunnableConfig):
+    """"""
+
+    task = state["task"]
+    response = worker_agent.invoke({"task": task["content"]})
+
+    ai_response_text = get_text_from_llm_response(response["messages"][-1])
+    content = "------------------\n" f"{ai_response_text}\n" "\n"
+
+    # Write research note to VFS
+    thread_id = config["configurable"]["thread_id"]
+    research_node_path = f"research_note_{thread_id}.txt"
+    vfs = get_vfs()
+
+    vfs.appendtext(research_node_path, content)
+
+    completed_task(task, thread_id)
+
+    return
+
+
+def synthesizer(state: ResearchAgentState, config: RunnableConfig):
+    thread_id = config["configurable"]["thread_id"]
+    path = f"todos_{thread_id}.json"
+    vfs = get_vfs()
+
+    content = vfs.readtext(path)
+
+    print("todo file content", content)
+
+    research_node_path = f"research_note_{thread_id}.txt"
+
+    research_note = vfs.readtext(research_node_path)
+
+    llm = get_chat_model()
+
+    prompt = ChatPromptTemplate(
+        [
+            ("system", SYSTHESIS_PROMPT),
+            ("human", "{query}"),
+        ]
+    )
+
+    chain = prompt | llm
+
+    response = chain.invoke({"query": state["query"], "research_note": research_note})
+
+    return {"messages": response}
