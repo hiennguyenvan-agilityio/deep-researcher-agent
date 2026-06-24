@@ -4,7 +4,7 @@ This project showcases a practical implementation build of the deep researcher.
 
 ![High-level Architecture](images/high-level_architecture.png)
 
-**Agent workflow**
+## Agent workflow
 
 ![Agent Workflow](images/agent-workflow.png)
 
