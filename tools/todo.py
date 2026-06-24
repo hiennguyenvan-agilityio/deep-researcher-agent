@@ -77,23 +77,3 @@ def write_todos(
     vfs.writetext(f"todos_{thread_id}.json", serialized)
 
     return
-
-@tool
-def completed_task(
-    todo: Todo,
-    runtime: ToolRuntime,
-) -> Command[Any]:
-    """Update task to completed"""
-    old_todo = json.dumps(todo)
-    updated_todo = json.dumps({**todo, "status": "completed"})
-
-    thread_id = runtime.execution_info.thread_id
-    path = f"todos_{thread_id}.json"
-    vfs = get_vfs()
-    
-    content = vfs.readtext(path)
-    new_content = content.replace(old_todo, updated_todo)
-    
-    vfs.writetext(path, new_content)
-
-    return

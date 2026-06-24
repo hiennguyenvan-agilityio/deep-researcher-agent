@@ -1,7 +1,7 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "Deep researcher": "./agents/deep_researcher/main.py:deep_researcher"
+    "Deep researcher": "./agents/deep_researcher/main.py:deep_researcher_agent"
   },
   "env": "./.env"
 }

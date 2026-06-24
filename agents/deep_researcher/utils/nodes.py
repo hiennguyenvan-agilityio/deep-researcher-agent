@@ -3,124 +3,82 @@ import uuid
 from langchain.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
+from langgraph.graph import MessagesState
 
-from agents.deep_researcher.prompts import GATEKEEPER_PROMPT, RESERACHER_PROMPT, SYSTHESIS_PROMPT, VERIFICATION_PROMPT
-from agents.deep_researcher.utils.states import AgentState, WorkerState
-from agents.deep_researcher.utils.structuted_outputs import GatekeeperOutput
-from resources.models import get_chat_model, get_reason_model
+from agents.deep_researcher.prompts import GATEKEEPER_PROMPT, VERIFICATION_PROMPT
+from agents.deep_researcher.utils.states import AgentState, GuardState, ReviewState
+from agents.deep_researcher.utils.structuted_outputs import (
+    GatekeeperOutput,
+    ReviewerOutput,
+)
+from resources.models import get_reason_model
 from resources.vitual_file_system import get_vfs
-from tools.todo import write_todos
 from utils.common import get_text_from_llm_response
-from planner_agent.agent import planner_agent
+from agents.researcher.main import researcher_agent
 
 
-def gatekeeper_node(state: AgentState):
+def gatekeeper(state: MessagesState) -> GuardState:
     """Perform safety/clarity/enhancement check and return structured decision."""
 
     llm = get_reason_model().with_structured_output(GatekeeperOutput)
 
-    prompt = ChatPromptTemplate([
-        ("system", GATEKEEPER_PROMPT),
-        ("placeholder", "{messages}"),
-    ])
+    prompt = ChatPromptTemplate(
+        [
+            ("system", GATEKEEPER_PROMPT),
+            ("placeholder", "{messages}"),
+        ]
+    )
 
     chain = prompt | llm
     response = chain.invoke(state)
 
     action = response.get("action")
 
-    if(action == "proceed"):
+    if action == "proceed":
         query = response.get("query")
 
         return {"query": query, "action": action}
-    
+
     message = response.get("message")
 
     return {"messages": AIMessage(content=message), "action": action}
 
-def planning_node(state: AgentState):
-    planner_agent.invoke({"query": state["query"]})
+
+def researcher(state: GuardState, config: RunnableConfig):
+    response = researcher_agent.invoke({"query": state["query"]})
+
+    ai_response_text = get_text_from_llm_response(response["messages"][-1])
+
+    vfs = get_vfs()
+    thread_id = config["configurable"]["thread_id"]
+    vfs.writetext(f"research_result_{thread_id}.txt", ai_response_text)
 
     return
 
-def research_node(state: WorkerState, config: RunnableConfig):
-    llm = get_chat_model()
 
-    task = state["task"]
+def reviewer(state: MessagesState, config: RunnableConfig) -> ReviewState:
+    thread_id = config["configurable"]["thread_id"]
+    llm = get_reason_model().with_structured_output(ReviewerOutput)
+    vfs = get_vfs()
+    ai_response = vfs.readtext(f"research_result_{thread_id}.txt")
 
-    prompt = ChatPromptTemplate([("human", RESERACHER_PROMPT)])
-
-    chain = prompt | llm
-    response = chain.invoke({"task": task["content"]})
-
-    ai_response_text = get_text_from_llm_response(response)
-    content = (
-        "------------------\n"
-        f"{ai_response_text}\n"
-        "\n"
+    prompt = ChatPromptTemplate(
+        [
+            ("system", VERIFICATION_PROMPT),
+            ("placeholder", "{messages}"),
+        ]
     )
-
-    # Write research note to VFS
-    thread_id = config["configurable"]["thread_id"]
-    research_node_path = f"research_note_{thread_id}.txt"
-    vfs = get_vfs()
-    
-    vfs.appendtext(research_node_path, content)
-
-    tool_call = {
-        "name": "completed_task",
-        "args": {"todo": task},
-        "id": str(uuid.uuid4()),
-        "type": "tool_call",
-    }
-
-    return {
-        "tmp_messages": [AIMessage(content="", tool_calls=[tool_call])]
-    }
-
-def synthesis_node(state: AgentState, config: RunnableConfig):
-    thread_id = config["configurable"]["thread_id"]
-    research_node_path = f"research_note_{thread_id}.txt"
-    vfs = get_vfs()
-
-    research_note = vfs.readtext(research_node_path)
-
-    llm = get_chat_model()
-
-    prompt = ChatPromptTemplate([
-        ("system", SYSTHESIS_PROMPT),
-        ("placeholder", "{messages}"),
-    ])
-
-    chain = prompt | llm
-
-    response = chain.invoke({"messages": state["messages"], "research_note": research_note})
-
-    ai_response_text = get_text_from_llm_response(response)
-
-    vfs = get_vfs()
-    vfs.writetext(f"systhesis_{thread_id}.txt", ai_response_text)
-
-    return
-
-def verification_node(state: AgentState, config: RunnableConfig):
-    thread_id = config["configurable"]["thread_id"]
-    llm = get_reason_model().bind_tools([write_todos])
-    vfs = get_vfs()
-    ai_response = vfs.readtext(f"systhesis_{thread_id}.txt")
-
-    prompt = ChatPromptTemplate([
-        ("system", VERIFICATION_PROMPT),
-        ("placeholder", "{messages}"),
-    ])
 
     chain = prompt | llm
 
     response = chain.invoke({"messages": state["messages"], "ai_response": ai_response})
 
-    return {"tmp_messages": [response]}
+    approved = response["approved"]
 
-def finalize_node(state: AgentState):
-    message = state["tmp_messages"]
+    if approved:
+        return {
+            "messages": AIMessage(content=response["revised_answer"]),
+            "approved": approved,
+        }
 
-    return {"messages": message}
+    return {"query": response["recommend_action"], "approved": approved}

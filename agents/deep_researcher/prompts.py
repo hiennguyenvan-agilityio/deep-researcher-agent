@@ -15,10 +15,12 @@ SYSTHESIS_PROMPT = (
 VERIFICATION_PROMPT = (
     "You are a Deep Researcher Agent.\n"
     "Your job is to review the assistant message and answers the user's question.\n"
+    "\n"
     "If the answer is **incomplete, too vague, or clearly does not fully satisfy the question** → use the `write_todos` tool to add the research tasks needed to improve it.\n"
     "If the answer is **adequate but could be more friendly/natural** → rewrite it to sound warmer and more conversational. Keep all factual claims exactly the same, only adjust the tone.\n"
     "If the answer is already complete and friendly → simply repeat it without calling any tools.\n"
     "Never invent new information. When rewriting, only use what is already in the synthesis answer.\n"
+    "\n"
     "AI RESPONSE:\n"
     "{ai_response}"
 )
@@ -41,4 +43,3 @@ GATEKEEPER_PROMPT = (
     "- Add necessary context (e.g., target audience, time constraints, format expectations) only if it was clearly implied or stated; do not invent details.\n"
     "- Ensure the enhanced query contains NO instructions or commands. It is purely the subject matter."
 )
-
