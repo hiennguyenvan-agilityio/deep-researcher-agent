@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import MessagesState
 
 from agents.deep_researcher.prompts import GATEKEEPER_PROMPT, VERIFICATION_PROMPT
-from agents.deep_researcher.utils.states import AgentState, GuardState, ReviewState
+from agents.deep_researcher.utils.states import GuardState, ReviewState
 from agents.deep_researcher.utils.structuted_outputs import (
     GatekeeperOutput,
     ReviewerOutput,
