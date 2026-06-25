@@ -1,12 +1,11 @@
 from langchain_core.prompts import ChatPromptTemplate
 
-from agents.deep_researcher.prompts import SYSTHESIS_PROMPT
-from agents.researcher.prompts import PLANNER_PROMPT
+from agents.researcher.prompts import PLANNER_PROMPT, SYSTHESIS_PROMPT
 from agents.researcher.utils.helper import completed_task
 from agents.researcher.utils.states import ResearchAgentState, WorkerState
+from agents.researcher.utils.tools import write_todos
 from resources.models import get_chat_model, get_reason_model
 from resources.vitual_file_system import get_vfs
-from tools.todo import write_todos
 from utils.common import get_text_from_llm_response
 from agents.worker.main import worker_agent
 from langchain_core.runnables import RunnableConfig

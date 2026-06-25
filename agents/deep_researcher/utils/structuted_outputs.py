@@ -1,4 +1,3 @@
-from dataclasses import Field
 from typing import Literal, Optional, TypedDict, Annotated
 
 
@@ -25,23 +24,12 @@ class GatekeeperOutput(TypedDict):
 
 
 class ReviewerOutput(TypedDict):
-    approved: Annotated[
-        bool, "True if the answer sufficiently addresses the user's request."
-    ]
+    approved: Annotated[bool, "True if the answer correctly the user's request."]
     recommend_action: Annotated[
         Optional[str],
         (
             "If approved=False, provide a clear and actionable research task "
             "describing exactly what information is missing, what claims must be "
             "verified, or what analysis must be performed. None if approved=True."
-        ),
-    ]
-    revised_answer: Annotated[
-        Optional[str],
-        (
-            "A user-facing answer that is accurate, complete, clear, friendly, "
-            "and easy to understand. Written in a natural, conversational tone "
-            "and ready to send directly to the user. "
-            "None if approved=False"
         ),
     ]

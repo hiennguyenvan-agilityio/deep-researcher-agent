@@ -13,11 +13,13 @@ load_dotenv()
 def route(state: GuardState):
     return state["action"]
 
+
 def review_route(state: ReviewState):
-    if state['approved']:
+    if state["approved"]:
         return END
-    
+
     return "researcher"
+
 
 reason_model_name = os.getenv("REASON_MODEL_NAME")
 chat_model_name = os.getenv("CHAT_MODEL_NAME")

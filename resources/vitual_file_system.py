@@ -1,5 +1,6 @@
 from fs.memoryfs import MemoryFS
-from fs.osfs import OSFS
+
+# from fs.osfs import OSFS
 
 _vfs = None
 

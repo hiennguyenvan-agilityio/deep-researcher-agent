@@ -7,7 +7,7 @@ WORKER_PROMPT = (
     "**Objective**"
     "Execute the task thoroughly and report the result.\n"
     "\n"
-    "**Important**\n"
+    "**Guideline:**\n"
     "- Use search_tool to gather information. Do not assume any information\n"
     "- Critically evaluate the information you find.\n"
     "- Identify inconsistencies, gaps, uncertainties, or limitations in the available evidence.\n"

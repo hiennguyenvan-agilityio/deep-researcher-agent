@@ -7,8 +7,8 @@ from langgraph.types import Send
 
 from agents.researcher.utils.nodes import orchestrator, worker, synthesizer
 from agents.researcher.utils.states import ResearchAgentState
+from agents.researcher.utils.tools import write_todos
 from resources.vitual_file_system import get_vfs
-from tools.todo import write_todos
 
 
 def assign_workers(_: ResearchAgentState, config: RunnableConfig):

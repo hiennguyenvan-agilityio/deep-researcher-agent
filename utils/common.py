@@ -1,7 +1,5 @@
 from langchain.messages import AIMessage
 
-from tools.todo import Todo
-
 
 def get_text_from_llm_response(response: AIMessage):
     blocks = response.content_blocks
