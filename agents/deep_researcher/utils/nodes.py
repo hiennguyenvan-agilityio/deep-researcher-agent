@@ -3,13 +3,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import MessagesState
 
-from agents.deep_researcher.prompts import GATEKEEPER_PROMPT, VERIFICATION_PROMPT
-from agents.deep_researcher.utils.states import GuardState, ReviewState
-from agents.deep_researcher.utils.structuted_outputs import (
-    GatekeeperOutput,
-    ReviewerOutput,
-)
-from agents.deep_researcher.utils.tools import search_tool
+from agents.deep_researcher.prompts import GATEKEEPER_PROMPT
+from agents.deep_researcher.utils.states import GuardState
+from agents.deep_researcher.utils.structuted_outputs import GatekeeperOutput
 from resources.models import get_reason_model
 from resources.vitual_file_system import get_vfs
 from utils.common import get_text_from_llm_response
@@ -19,11 +15,7 @@ from agents.researcher.main import researcher_agent
 def gatekeeper(state: MessagesState) -> GuardState:
     """Perform safety/clarity/enhancement check and return structured decision."""
 
-    llm = (
-        get_reason_model()
-        .bind_tools([search_tool])
-        .with_structured_output(GatekeeperOutput)
-    )
+    llm = get_reason_model().with_structured_output(GatekeeperOutput)
 
     prompt = ChatPromptTemplate(
         [
@@ -57,33 +49,3 @@ def researcher(state: GuardState, config: RunnableConfig):
     vfs.writetext(f"research_result_{thread_id}.txt", ai_response_text)
 
     return
-
-
-def reviewer(state: MessagesState, config: RunnableConfig) -> ReviewState:
-    thread_id = config["configurable"]["thread_id"]
-    llm = get_reason_model().with_structured_output(ReviewerOutput)
-    vfs = get_vfs()
-    research_result = vfs.readtext(f"research_result_{thread_id}.txt")
-
-    prompt = ChatPromptTemplate(
-        [
-            ("system", VERIFICATION_PROMPT),
-            ("placeholder", "{messages}"),
-        ]
-    )
-
-    chain = prompt | llm
-
-    response = chain.invoke(
-        {"messages": state["messages"], "research_result": research_result}
-    )
-
-    approved = response["approved"]
-
-    if approved:
-        return {
-            "messages": AIMessage(content=research_result),
-            "approved": approved,
-        }
-
-    return {"query": response["recommend_action"], "approved": approved}

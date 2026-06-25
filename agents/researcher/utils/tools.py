@@ -8,18 +8,10 @@ from resources.vitual_file_system import get_vfs
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
 
-## How to Use This Tool
-
-1. When you start working on a task - Mark it as in_progress BEFORE beginning work.
-2. After completing a task - Mark it as completed and add any new follow-up tasks discovered during implementation.
-3. You can also update future tasks, such as deleting them if they are no longer necessary, or adding new tasks that are necessary. Don't change previously completed tasks.
-4. You can make several updates to the todo list at once. For example, when you complete a task, you can mark the next task you need to start as in_progress.
-
 ## Task States and Management
 
 1. **Task States**: Use these states to track progress:
     - pending: Task not yet started
-    - in_progress: Currently working on (you can have multiple tasks in_progress at a time if they are not related to each other and can be run in parallel)
     - completed: Task finished successfully
 
 2. **Task Management**:
@@ -27,12 +19,9 @@ WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structure
     - Mark tasks complete IMMEDIATELY after finishing (don't batch completions)
     - Complete current tasks before starting new ones
     - Remove tasks that are no longer relevant from the list entirely
-    - IMPORTANT: When you write this todo list, you should mark your first task (or tasks) as in_progress immediately!.
-    - IMPORTANT: Unless all tasks are completed, you should always have at least one task in_progress.
 
 3. **Task Completion Requirements**:
     - ONLY mark a task as completed when you have FULLY accomplished it
-    - If you encounter errors, blockers, or cannot finish, keep the task as in_progress
     - When blocked, create a new task describing what needs to be resolved
     - Never mark a task as completed if:
         - There are unresolved issues or errors
@@ -60,7 +49,7 @@ class Todo(TypedDict):
     content: str
     """The content/description of the todo item."""
 
-    status: Literal["pending", "in_progress", "completed"]
+    status: Literal["pending", "completed"]
     """The current status of the todo item."""
 
 

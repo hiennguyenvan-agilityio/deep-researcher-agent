@@ -4,7 +4,7 @@ from agents.researcher.prompts import PLANNER_PROMPT, SYSTHESIS_PROMPT
 from agents.researcher.utils.helper import completed_task
 from agents.researcher.utils.states import ResearchAgentState, WorkerState
 from agents.researcher.utils.tools import write_todos
-from resources.models import get_chat_model, get_reason_model
+from resources.models import get_reason_model
 from resources.vitual_file_system import get_vfs
 from utils.common import get_text_from_llm_response
 from agents.worker.main import worker_agent
@@ -52,18 +52,13 @@ def worker(state: WorkerState, config: RunnableConfig):
 
 def synthesizer(state: ResearchAgentState, config: RunnableConfig):
     thread_id = config["configurable"]["thread_id"]
-    path = f"todos_{thread_id}.json"
     vfs = get_vfs()
-
-    content = vfs.readtext(path)
-
-    print("todo file content", content)
 
     research_node_path = f"research_note_{thread_id}.txt"
 
     research_note = vfs.readtext(research_node_path)
 
-    llm = get_chat_model()
+    llm = get_reason_model()
 
     prompt = ChatPromptTemplate(
         [

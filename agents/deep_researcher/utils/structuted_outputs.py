@@ -21,15 +21,3 @@ class GatekeeperOutput(TypedDict):
     query: Annotated[
         Optional[str], "If proceed, the fully clarified query to pass to planner."
     ]
-
-
-class ReviewerOutput(TypedDict):
-    approved: Annotated[bool, "True if the answer correctly the user's request."]
-    recommend_action: Annotated[
-        Optional[str],
-        (
-            "If approved=False, provide a clear and actionable research task "
-            "describing exactly what information is missing, what claims must be "
-            "verified, or what analysis must be performed. None if approved=True."
-        ),
-    ]
