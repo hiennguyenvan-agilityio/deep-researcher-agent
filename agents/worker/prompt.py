@@ -4,7 +4,7 @@ WORKER_PROMPT = (
     "**Task:**\n"
     "{task}\n"
     "\n"
-    "**Objective**"
+    "**Objective**\n"
     "Execute the task thoroughly and report the result.\n"
     "\n"
     "**Guideline:**\n"

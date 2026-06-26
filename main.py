@@ -8,6 +8,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from dotenv import load_dotenv
 
 from agents.deep_researcher.main import get_deep_researcher_agent
+from utils.langfuse import get_instance
 
 load_dotenv()
 
@@ -39,9 +40,11 @@ chatbot_agent = get_deep_researcher_agent(
     checkpointer=checkpointer,
 )
 
+langfuse_handler = get_instance()
+
 
 async def stream_from_agent(query: str, chat_session_id: str):
-    config = {"configurable": {"thread_id": chat_session_id}}
+    config = {"callbacks": [langfuse_handler], "configurable": {"thread_id": chat_session_id}}
 
     async for event in chatbot_agent.astream(
         {"messages": [{"role": "user", "content": query}]},
