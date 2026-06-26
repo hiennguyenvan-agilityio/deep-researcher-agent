@@ -49,6 +49,9 @@ cd ai-training/deep_researcher_agent
 
 ### 4. Run the backend server
 
+There are two ways to run the development server:
+
+#### Using Langgraph cli
 Start the LangGraph development server:
 ```bash
 langgraph dev
@@ -57,3 +60,13 @@ langgraph dev
 The server will be available at http://localhost:2024.
 
 You can then interact with the agent local server using [LangSmith Studio](https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024)
+
+#### Run fastapi server
+Start server
+```bash
+PYTHONPATH=. fastapi dev
+```
+
+The server will be available at http://localhost:8000.
+
+The chat endpoint is available at **http://localhost:8000/chat**. It provides a **streaming API** (Server-Sent Events), so your client should process the response incrementally as it is streamed.
