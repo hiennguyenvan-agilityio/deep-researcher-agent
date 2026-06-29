@@ -12,7 +12,6 @@ from langgraph.checkpoint.memory import MemorySaver
 from agents.deep_researcher.main import get_deep_researcher_agent
 from utils.langfuse import get_instance
 
-
 load_dotenv()
 
 client = AsyncOpenAI()
@@ -21,6 +20,7 @@ llm = llm_factory("gpt-4o-mini", client=client)
 answer_accuracy = AnswerAccuracy(llm=llm)
 
 langfuse_handler = get_instance()
+
 
 @experiment()
 async def run_experiment(row):
@@ -42,7 +42,9 @@ async def run_experiment(row):
     config = {"callbacks": [langfuse_handler], "configurable": {"thread_id": thread_id}}
 
     # Get the model's prediction
-    response = deep_researcher_agent.invoke({"messages": [{"role": "user", "content": question}]}, config)
+    response = deep_researcher_agent.invoke(
+        {"messages": [{"role": "user", "content": question}]}, config
+    )
     prediction = response["messages"][-1].content
 
     # Calculate the correctness metric

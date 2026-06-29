@@ -2,14 +2,14 @@ import os
 import pathlib
 
 from dotenv import load_dotenv
-from langchain_classic.chat_models import init_chat_model
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from ragas import Dataset, experiment
 
 from agents.researcher.prompts import PLANNER_PROMPT
 
-
 load_dotenv()
+
 
 @experiment(name_prefix="planner")
 async def run_experiment(row):

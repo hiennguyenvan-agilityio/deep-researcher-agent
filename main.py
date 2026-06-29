@@ -44,7 +44,10 @@ langfuse_handler = get_instance()
 
 
 async def stream_from_agent(query: str, chat_session_id: str):
-    config = {"callbacks": [langfuse_handler], "configurable": {"thread_id": chat_session_id}}
+    config = {
+        "callbacks": [langfuse_handler],
+        "configurable": {"thread_id": chat_session_id},
+    }
 
     async for event in chatbot_agent.astream(
         {"messages": [{"role": "user", "content": query}]},
