@@ -17,9 +17,9 @@ experiment_concurrency = int(os.getenv("EVAL_EXPERIMENT_CONCURRENCY", 10))
 _semaphore = asyncio.Semaphore(experiment_concurrency)
 
 
-@discrete_metric(name="action", allowed_values=["pass", "fail"])
+@discrete_metric(name="action_correct", allowed_values=["pass", "fail"])
 def action_correct(prediction: str, actual: str):
-    """Make action accuracy of the prediction."""
+    """Check action accuracy of the prediction."""
     return (
         MetricResult(value="pass", reason="")
         if prediction == actual
