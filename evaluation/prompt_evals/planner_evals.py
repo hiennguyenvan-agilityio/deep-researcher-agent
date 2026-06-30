@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from typing import List, TypedDict
+import asyncio
 
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
@@ -11,7 +12,7 @@ from ragas import Dataset, experiment
 from ragas.llms import llm_factory
 from ragas.metrics.collections import ToolCallAccuracy
 from ragas.messages import AIMessage, ToolCall
-from ragas.metrics import DiscreteMetric, MetricResult, discrete_metric
+from ragas.metrics import MetricResult, numeric_metric
 
 from agents.researcher.prompts import PLANNER_PROMPT
 from agents.researcher.utils.tools import Todo, write_todos
@@ -30,10 +31,7 @@ class Scores(TypedDict):
 
 class Evaluation(TypedDict):
     scores: Scores
-    summary: str
-    strengths: List[str]
-    weaknesses: List[str]
-    suggestions: str
+    reason: str
 
 
 client = AsyncOpenAI()
@@ -45,79 +43,85 @@ QUALITY_CHECK_PROMPT = Path(
     f"{current_file_folder}/planner_quality_check_prompt.txt"
 ).read_text(encoding="utf-8")
 
+experiment_concurrency = int(os.getenv("EVAL_EXPERIMENT_CONCURRENCY", 10))
+_semaphore = asyncio.Semaphore(experiment_concurrency)
 
-@discrete_metric(name="quality_check")
+
+@numeric_metric(name="quality_check")
 def quality_check(query: str, tasks: list[Todo]):
     """Check quality of tasks, which generate from planner"""
 
-    llm = init_chat_model("gpt-5.1").with_structured_output(Evaluation)
+    llm = init_chat_model("gpt-5.1", temperature=0).with_structured_output(Evaluation)
 
     prompt = ChatPromptTemplate.from_template(QUALITY_CHECK_PROMPT)
 
     chain = prompt | llm
     response = chain.invoke({"query": query, "tasks": json.dumps(tasks)})
+    score = response["scores"]["overall"] / 5.0
 
-    return MetricResult(value=response["scores"]["overall"])
+    return MetricResult(value=score, reason=response["reason"])
 
 
 @experiment(name_prefix="planner")
 async def run_experiment(row):
-    query = row["query"]
-    model_name = os.getenv("REASON_MODEL_NAME")
-    llm = init_chat_model(model=model_name).bind_tools([write_todos])
+    async with _semaphore:
+        query = row["query"]
+        model_name = os.getenv("REASON_MODEL_NAME")
+        llm = init_chat_model(model=model_name).bind_tools([write_todos])
 
-    prompt = ChatPromptTemplate(
-        [
-            ("system", PLANNER_PROMPT),
-            ("human", "{query}"),
-        ]
-    )
-
-    chain = prompt | llm
-    response = chain.invoke({"query": query})
-
-    # We only need to verify that the write_todos tool is called. Since ToolCall requires arguments, we ignore the actual arguments by passing the expected reference arguments.
-    args = response.tool_calls[0]["args"]
-    todos = args["todos"]
-
-    reference_tool_calls = [
-        ToolCall(
-            name="write_todos",
-            args=args,
+        prompt = ChatPromptTemplate(
+            [
+                ("system", PLANNER_PROMPT),
+                ("human", "{query}"),
+            ]
         )
-    ]
 
-    user_input = [
-        AIMessage(
-            content="",
-            tool_calls=[
-                ToolCall(
-                    name=tc["name"],
-                    args=tc["args"],
-                )
-                for tc in response.tool_calls
-            ],
-        ),
-    ]
+        chain = prompt | llm
+        response = chain.invoke({"query": query, "research_notes": None})
 
-    tool_call_accuracy = ToolCallAccuracy()
-    tool_call_accuracy_result = await tool_call_accuracy.ascore(
-        user_input=user_input,
-        reference_tool_calls=reference_tool_calls,
-    )
+        # We only need to verify that the write_todos tool is called. Since ToolCall requires arguments, we ignore the actual arguments by passing the expected reference arguments.
+        args = response.tool_calls[0]["args"]
+        todos = args["todos"]
 
-    quality_check_result = await quality_check.ascore(query=query, tasks=todos)
+        reference_tool_calls = [
+            ToolCall(
+                name="write_todos",
+                args=args,
+            )
+        ]
 
-    return {
-        "query": query,
-        "tool_call_accuracy": tool_call_accuracy_result.value,
-        "quality": quality_check_result.value,
-    }
+        user_input = [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    ToolCall(
+                        name=tc["name"],
+                        args=tc["args"],
+                    )
+                    for tc in response.tool_calls
+                ],
+            ),
+        ]
+
+        tool_call_accuracy = ToolCallAccuracy()
+        tool_call_accuracy_result = await tool_call_accuracy.ascore(
+            user_input=user_input,
+            reference_tool_calls=reference_tool_calls,
+        )
+
+        quality_check_result = await quality_check.ascore(query=query, tasks=todos)
+
+        return {
+            "query": query,
+            "tool_call_accuracy": tool_call_accuracy_result.value,
+            "quality": quality_check_result.value,
+            "suggestions": quality_check_result.reason,
+        }
 
 
 async def main():
     dataset = Dataset.load(
-        name="one_planner_queries",
+        name="planner_queries",
         backend="local/csv",
         root_dir=current_file_folder,
     )

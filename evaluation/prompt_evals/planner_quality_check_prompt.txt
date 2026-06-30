@@ -33,28 +33,7 @@ Evaluate the planner output on the following dimensions, each on a scale of 1 (t
 1. Read the <user_request> and <task_list> carefully.
 2. Think step by step about each criterion, but only keep a minimum draft for each thinking step, with 5 words at most, comparing the planner output against the user request.
 3. Assign a score for each criterion (1-5), then calculate an 'overall' score that reflects the weighted importance of the criteria (relevance and completeness are most important, clarity and feasibility next).
-4. Ensure the 'summary' captures the most salient good and bad points.
-5. 'strengths' and 'weaknesses' should be concise bullet points.
-6. 'suggestions' must be concrete improvements, not just "make it better".
-
-# OUTPUT FORMAT
-You must respond with a valid JSON object. No extra text outside the JSON.
-
-The JSON must have the following structure:
-{{
-    "scores": {{
-        "relevance_alignment": int,
-        "completeness_coverage": int,
-        "clarity_actionability": int,
-        "granularity": int,
-        "feasibility": int,
-        "overall": int
-    }},
-    "summary": "A concise 2-3 sentence overall assessment of the plan.",
-    "strengths": ["List", "of", "key", "strengths"],
-    "weaknesses": ["List", "of", "critical", "weaknesses"],
-    "suggestions": "Actionable, specific recommendations to improve the plan."
-}}
+4. The "reason" must be a short paragraph that includes the reason and the concrete improvement, not just “make it better”.
 
 Now evaluate the following:
 
