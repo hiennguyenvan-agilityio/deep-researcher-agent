@@ -3,11 +3,11 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from agents.worker.utils.nodes import executor
 from agents.worker.utils.states import SearchAgentState
-from agents.worker.utils.tools import search_tool
+from agents.worker.utils.tools import  exa_search_tool
 
 worker_builder = StateGraph(SearchAgentState)
 
-tools_list = [search_tool]
+tools_list = [exa_search_tool]
 
 worker_builder.add_node("executor", executor)
 worker_builder.add_node("tools", ToolNode(tools_list))

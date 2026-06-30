@@ -1,6 +1,7 @@
 from typing import Any, Literal, TypedDict
 import json
 
+from langchain.messages import ToolMessage
 from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
@@ -52,6 +53,15 @@ class Todo(TypedDict):
     status: Literal["pending", "completed"]
     """The current status of the todo item."""
 
+    step: int
+    (
+        "The execution stage of the task.\n"
+        "\n"
+        "Assign the same step number to tasks that are independent and can be executed\n"
+        "in parallel. Only increment the step when a task depends on the completion or\n"
+        "results of tasks in earlier steps."
+    )
+
 
 @tool(description=WRITE_TODOS_TOOL_DESCRIPTION)
 def write_todos(
@@ -65,4 +75,7 @@ def write_todos(
 
     vfs.writetext(f"todos_{thread_id}.json", serialized)
 
-    return
+    return ToolMessage(
+        content=f"Successfully saved {len(todos)} todos.",
+        tool_call_id=runtime.tool_call_id,
+    )

@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, TypedDict
+from typing import TypedDict
 import asyncio
 
 from dotenv import load_dotenv

@@ -1,7 +1,9 @@
+import os
+
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 
 from agents.researcher.prompts import PLANNER_PROMPT, SYSTHESIS_PROMPT
-from agents.researcher.utils.helper import completed_task
 from agents.researcher.utils.states import ResearchAgentState, WorkerState
 from agents.researcher.utils.tools import write_todos
 from resources.models import get_reason_model
@@ -11,22 +13,41 @@ from agents.worker.main import worker_agent
 from langchain_core.runnables import RunnableConfig
 
 
-def orchestrator(state: ResearchAgentState):
+def orchestrator(state: ResearchAgentState, config: RunnableConfig):
     """Orchestrator that generates a plan for the researcher"""
 
-    llm = get_reason_model().bind_tools([write_todos])
+    # llm = get_reason_model().bind_tools([write_todos])
+    model_name = os.getenv("REASON_MODEL_NAME")
+    llm = init_chat_model(model=model_name, temperature=0).bind_tools([write_todos])
+
+    thread_id = config["configurable"]["thread_id"]
+    vfs = get_vfs()
+
+    research_node_path = f"research_note_{thread_id}.txt"
+
+    research_notes = None
+
+    if vfs.exists(research_node_path):
+        research_notes = vfs.readtext(research_node_path)
 
     prompt = ChatPromptTemplate(
         [
             ("system", PLANNER_PROMPT),
             ("human", "{query}"),
+            ("placeholder", "{messages}"),
         ]
     )
 
     chain = prompt | llm
-    response = chain.invoke(state)
+    response = chain.invoke(
+        {
+            "query": state["query"],
+            "messages": state["messages"],
+            "research_notes": research_notes,
+        }
+    )
 
-    return {"messages": response}
+    return {"messages": response, "step": state.get("step", 0) + 1}
 
 
 def worker(state: WorkerState, config: RunnableConfig):
@@ -45,7 +66,7 @@ def worker(state: WorkerState, config: RunnableConfig):
 
     vfs.appendtext(research_node_path, content)
 
-    completed_task(task, thread_id)
+    # completed_task(task, thread_id)
 
     return
 

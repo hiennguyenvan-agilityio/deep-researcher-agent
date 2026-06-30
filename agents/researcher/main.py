@@ -11,16 +11,26 @@ from agents.researcher.utils.tools import write_todos
 from resources.vitual_file_system import get_vfs
 
 
-def assign_workers(_: ResearchAgentState, config: RunnableConfig):
+def assign_workers(state: ResearchAgentState, config: RunnableConfig):
     """Assign a worker to each task in todo list"""
 
     thread_id = config["configurable"]["thread_id"]
     vfs = get_vfs()
     content = vfs.readtext(f"todos_{thread_id}.json")
+    current_step = state.get("step")
 
     todos = json.loads(content)
 
-    return [Send("worker", {"task": task}) for task in todos]
+    tasks = [
+        todo
+        for todo in todos
+        if todo["step"] == current_step and todo["status"] != "completed"
+    ]
+
+    if not tasks:
+        return "synthesizer"
+
+    return [Send("worker", {"task": task}) for task in tasks]
 
 
 researcher_builder = StateGraph(ResearchAgentState)
@@ -36,8 +46,11 @@ researcher_builder.set_entry_point("orchestrator")
 
 researcher_builder.add_edge("orchestrator", "tools")
 
-researcher_builder.add_conditional_edges("tools", assign_workers, ["worker"])
-researcher_builder.add_edge("worker", "synthesizer")
+researcher_builder.add_conditional_edges(
+    "tools", assign_workers, ["worker", "synthesizer"]
+)
+researcher_builder.add_edge("worker", "orchestrator")
+# researcher_builder.add_edge("worker", "synthesizer")
 researcher_builder.add_edge("synthesizer", END)
 
 researcher_agent = researcher_builder.compile()
