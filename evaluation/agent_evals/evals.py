@@ -7,10 +7,11 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from ragas import Dataset, experiment
 from ragas.llms import llm_factory
-from ragas.metrics.collections import AnswerAccuracy
+from ragas.metrics.collections import AnswerAccuracy, Faithfulness
 from langgraph.checkpoint.memory import MemorySaver
 
 from agents.deep_researcher.main import get_deep_researcher_agent
+from resources.vitual_file_system import get_vfs
 from utils.langfuse import get_instance
 
 load_dotenv()
@@ -19,6 +20,7 @@ client = AsyncOpenAI()
 llm = llm_factory("gpt-4o-mini", client=client)
 
 answer_accuracy = AnswerAccuracy(llm=llm)
+faithfulness = Faithfulness(llm=llm)
 
 langfuse_handler = get_instance()
 
@@ -50,7 +52,7 @@ async def run_experiment(row):
         }
 
         # Get the model's prediction
-        response = deep_researcher_agent.invoke(
+        response = await deep_researcher_agent.ainvoke(
             {"messages": [{"role": "user", "content": question}]}, config
         )
         prediction = response["messages"][-1].content
@@ -62,11 +64,22 @@ async def run_experiment(row):
             reference=answer,
         )
 
+        vfs = get_vfs()
+        research_node_path = f"research_note_{thread_id}.txt"
+        context = vfs.readtext(research_node_path)
+
+        faithfulness_score = await faithfulness.ascore(
+            user_input=question,
+            response=prediction,
+            retrieved_contexts=[context]
+        )
+
         return {
+            "thread_id": thread_id,
             "question": question,
             "prediction": prediction,
-            "thread_id": thread_id,
             "answer_accuracy": answer_accuracy_score.value,
+            "faithfulness": faithfulness_score.value,
             "reason": answer_accuracy_score.reason,
         }
 
@@ -75,7 +88,7 @@ async def main():
     current_file_folder = pathlib.Path(__file__).parent.resolve()
 
     dataset = Dataset.load(
-        name="gaia_text_10",
+        name="gaia_text_10_another",
         backend="local/csv",
         root_dir=current_file_folder,
     )

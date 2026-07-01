@@ -1,6 +1,6 @@
-from fs.memoryfs import MemoryFS
+# from fs.memoryfs import MemoryFS
 
-# from fs.osfs import OSFS
+from fs.osfs import OSFS
 
 _vfs = None
 
@@ -9,7 +9,7 @@ def get_vfs():
     global _vfs
 
     if _vfs is None:
-        _vfs = MemoryFS()
-        # _vfs = OSFS('./')
+        # _vfs = MemoryFS()
+        _vfs = OSFS('./tmp')
 
     return _vfs
