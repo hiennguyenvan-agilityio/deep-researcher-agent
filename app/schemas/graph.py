@@ -8,15 +8,11 @@ from app.core.langgraph.tools.todo import Todo
 class AgentState(MessagesState):
     query: Optional[str]
     action: Optional[Literal["refuse", "ask_user", "proceed"]]
-
-
-class ResearchAgentState(MessagesState):
-    query: str
     step: int
     todos: list[Todo]
 
 
-class SearchAgentState(MessagesState):
+class ResearchAgentState(MessagesState):
     task: str
 
 

@@ -1,8 +1,5 @@
 You are a research worker responsible for completing a single research task.
 
-**Task:**
-{task}
-
 **Objective**
 Execute the task thoroughly and report the result.
 
