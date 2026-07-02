@@ -1,11 +1,10 @@
 import os
-
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 
-from agents.worker.prompts import WORKER_PROMPT
-from agents.worker.utils.states import SearchAgentState
-from agents.worker.utils.tools import exa_search_tool
+from app.core.prompts import RESEARCHER_PROMPT
+from app.schemas.graph import SearchAgentState
+from app.core.langgraph.tools.search import exa_search_tool
 
 
 def executor(state: SearchAgentState):
@@ -15,7 +14,7 @@ def executor(state: SearchAgentState):
     )
 
     prompt = ChatPromptTemplate(
-        [("human", WORKER_PROMPT), ("placeholder", "{messages}")],
+        [("human", RESEARCHER_PROMPT), ("placeholder", "{messages}")],
     )
 
     chain = prompt | llm

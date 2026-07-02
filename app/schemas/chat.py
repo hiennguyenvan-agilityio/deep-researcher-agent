@@ -1,6 +1,6 @@
-from typing import Optional, TypedDict
+from typing import NotRequired, TypedDict
 
 
 class ChatRequest(TypedDict):
     q: str
-    chat_session_id: Optional[str] = None
+    chat_session_id: NotRequired[str]

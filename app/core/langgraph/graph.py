@@ -3,16 +3,16 @@ from typing import Optional
 from langgraph.graph import END, MessagesState, StateGraph
 from langgraph.types import Checkpointer
 
-from agents.deep_researcher.utils.nodes import gatekeeper, researcher
-from agents.deep_researcher.utils.states import GuardState
-from resources.models import initialise_chat_model, initialise_reason_model
+from app.core.langgraph.nodes import gatekeeper, researcher
+from app.core.services.llm import initialise_chat_model, initialise_reason_model
+from app.schemas.graph import AgentState
 
 
-def route(state: GuardState):
+def route(state: AgentState):
     return state["action"]
 
 
-def get_deep_researcher_agent(
+def get_graph(
     chat_model_name: str,
     reason_model_name: Optional[str] = None,
     checkpointer: Optional[Checkpointer] = None,
@@ -20,7 +20,9 @@ def get_deep_researcher_agent(
     initialise_chat_model(chat_model_name)
     initialise_reason_model(reason_model_name or chat_model_name)
 
-    deep_researcher_builder = StateGraph(MessagesState)
+    deep_researcher_builder = StateGraph(
+        AgentState, input_schema=MessagesState, output_schema=MessagesState
+    )
 
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)
     deep_researcher_builder.add_node("researcher", researcher)

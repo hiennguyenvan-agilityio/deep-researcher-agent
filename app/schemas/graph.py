@@ -1,4 +1,20 @@
-from typing import Literal, Optional, TypedDict, Annotated
+from typing import Annotated, Literal, Optional, TypedDict
+
+from langgraph.graph import MessagesState
+
+
+class AgentState(MessagesState):
+    query: Optional[str]
+    action: Optional[Literal["refuse", "ask_user", "proceed"]]
+
+
+class ResearchAgentState(MessagesState):
+    query: str
+    step: int
+
+
+class SearchAgentState(MessagesState):
+    task: str
 
 
 class GatekeeperOutput(TypedDict):
