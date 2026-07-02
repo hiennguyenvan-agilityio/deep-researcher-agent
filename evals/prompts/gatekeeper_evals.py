@@ -8,8 +8,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from ragas import Dataset, experiment
 from ragas.metrics import MetricResult, discrete_metric
 
-from agents.deep_researcher.prompts import GATEKEEPER_PROMPT
-from agents.deep_researcher.utils.structuted_outputs import GatekeeperOutput
+from app.core.prompts import GATEKEEPER_PROMPT
+from app.schemas.graph import GatekeeperOutput
 
 load_dotenv()
 

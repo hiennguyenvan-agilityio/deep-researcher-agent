@@ -1,4 +1,4 @@
-from old.utils.langfuse import get_client
+from langfuse import get_client
 from langfuse.langchain import CallbackHandler
 
 _langfuse = None

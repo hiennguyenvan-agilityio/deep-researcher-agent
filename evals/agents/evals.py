@@ -71,7 +71,7 @@ async def run_experiment(row):
         faithfulness_score = await faithfulness.ascore(
             user_input=question,
             response=prediction,
-            retrieved_contexts=[context]
+            retrieved_contexts=[context],
         )
 
         return {
