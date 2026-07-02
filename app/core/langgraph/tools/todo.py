@@ -1,11 +1,9 @@
-from typing import Any, Literal, TypedDict
-import json
+from typing import Annotated, Any, Literal, TypedDict
 
 from langchain.messages import ToolMessage
-from langchain.tools import ToolRuntime, tool
+from langchain.tools import InjectedToolCallId, tool
 from langgraph.types import Command
 
-from app.core.services.file_system import get_fs
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
 
@@ -66,16 +64,20 @@ class Todo(TypedDict):
 @tool(description=WRITE_TODOS_TOOL_DESCRIPTION)
 def write_todos(
     todos: list[Todo],
-    runtime: ToolRuntime,
+    tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command[Any]:
     """Create and manage a structured task list for your current work session."""
-    serialized = json.dumps(todos)
-    thread_id = runtime.execution_info.thread_id
-    fs = get_fs()
 
-    fs.writetext(f"todos_{thread_id}.json", serialized)
+    print("here")
 
-    return ToolMessage(
-        content=f"Successfully saved {len(todos)} todos.",
-        tool_call_id=runtime.tool_call_id,
+    return Command(
+        update={
+            "todos": todos,
+            "messages": [
+                ToolMessage(
+                    content="Write todo call success.",
+                    tool_call_id=tool_call_id,
+                )
+            ],
+        }
     )

@@ -55,8 +55,8 @@ async def stream_from_agent(query: str, chat_session_id: str):
 
 @router.post("/chat")
 async def chat(chat_request: ChatRequest):
-    q = chat_request["q"]
-    chat_session_id = chat_request["chat_session_id"]
+    q = chat_request.get("q")
+    chat_session_id = chat_request.get("chat_session_id")
 
     if q is None:
         return {"error": "No query provided"}
@@ -76,8 +76,8 @@ async def chat(chat_request: ChatRequest):
 
 @router.post("/chat/stream")
 async def chat_stream(chat_request: ChatRequest):
-    q = chat_request["q"]
-    chat_session_id = chat_request["chat_session_id"]
+    q = chat_request.get("q")
+    chat_session_id = chat_request.get("chat_session_id")
 
     if q is None:
         return {"error": "No query provided"}

@@ -2,6 +2,8 @@ from typing import Annotated, Literal, Optional, TypedDict
 
 from langgraph.graph import MessagesState
 
+from app.core.langgraph.tools.todo import Todo
+
 
 class AgentState(MessagesState):
     query: Optional[str]
@@ -11,6 +13,7 @@ class AgentState(MessagesState):
 class ResearchAgentState(MessagesState):
     query: str
     step: int
+    todos: list[Todo]
 
 
 class SearchAgentState(MessagesState):
