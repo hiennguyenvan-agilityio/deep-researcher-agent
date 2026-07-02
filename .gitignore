@@ -12,7 +12,7 @@ htmlcov/
 .venv/
 
 # Environment
-.env
+.env*
 !.env.sample
 
 # IDEs and editors
