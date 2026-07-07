@@ -1,0 +1,4 @@
+thread_id,question,prediction,answer_accuracy,faithfulness,reason
+258a9700-9cc8-46c5-8f40-8007cb52510d,What was the complete title of the book in which two James Beard Award winners recommended the restaurant where Ali Khan enjoyed a New Mexican staple in his cost-conscious TV show that started in 2015? Write the numbers in plain text if there are some in the title.,"The book you’re looking for is:
+
+**Five Hundred Things To Eat Before It’s Too Late: And The Very Best Places To Eat Them**",0.75,1.0,
