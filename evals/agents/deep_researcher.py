@@ -10,9 +10,9 @@ from ragas.llms import llm_factory
 from ragas.metrics.collections import AnswerAccuracy, Faithfulness
 from langgraph.checkpoint.memory import MemorySaver
 
-from agents.deep_researcher.main import get_deep_researcher_agent
-from resources.vitual_file_system import get_vfs
-from utils.langfuse import get_instance
+from app.core.langgraph.graph import get_graph
+from app.core.services.file_system import get_fs
+from app.core.services.langfuse import get_instance
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ async def run_experiment(row):
 
         checkpointer = MemorySaver()
 
-        deep_researcher_agent = get_deep_researcher_agent(
+        deep_researcher_agent = await get_graph(
             chat_model_name=chat_model_name,
             reason_model_name=reason_model_name,
             checkpointer=checkpointer,
@@ -64,9 +64,9 @@ async def run_experiment(row):
             reference=answer,
         )
 
-        vfs = get_vfs()
+        fs = get_fs()
         research_node_path = f"research_note_{thread_id}.txt"
-        context = vfs.readtext(research_node_path)
+        context = fs.readtext(research_node_path)
 
         faithfulness_score = await faithfulness.ascore(
             user_input=question,
@@ -88,7 +88,7 @@ async def main():
     current_file_folder = pathlib.Path(__file__).parent.resolve()
 
     dataset = Dataset.load(
-        name="gaia_text_10_another",
+        name="gaia_text_10",
         backend="local/csv",
         root_dir=current_file_folder,
     )

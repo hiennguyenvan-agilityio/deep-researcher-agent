@@ -14,8 +14,9 @@ from ragas.metrics.collections import ToolCallAccuracy
 from ragas.messages import AIMessage, ToolCall
 from ragas.metrics import MetricResult, numeric_metric
 
-from app.core.langgraph.tools.todo import Todo, write_todos
+from app.core.langgraph.tools.todo import write_todos
 from app.core.prompts import PLANNER_PROMPT
+from app.schemas.todo import Todo
 
 load_dotenv()
 
@@ -67,7 +68,8 @@ async def run_experiment(row):
     async with _semaphore:
         query = row["query"]
         model_name = os.getenv("REASON_MODEL_NAME")
-        llm = init_chat_model(model=model_name).bind_tools([write_todos])
+        tools = [write_todos]
+        llm = init_chat_model(model=model_name).bind_tools(tools)
 
         prompt = ChatPromptTemplate(
             [
