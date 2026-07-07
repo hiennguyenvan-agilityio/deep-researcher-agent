@@ -11,7 +11,6 @@ from app.core.services.langfuse import get_instance
 from app.schemas.chat import ChatRequest
 from langgraph.checkpoint.memory import MemorySaver
 
-
 router = APIRouter()
 
 chat_model_name = os.getenv(
@@ -23,12 +22,6 @@ reason_model_name = os.getenv(
 
 checkpointer = MemorySaver()
 
-chatbot_agent = get_graph(
-    chat_model_name=chat_model_name,
-    reason_model_name=reason_model_name,
-    checkpointer=checkpointer,
-)
-
 langfuse_handler = get_instance()
 
 
@@ -37,6 +30,12 @@ async def stream_from_agent(query: str, chat_session_id: str):
         "callbacks": [langfuse_handler],
         "configurable": {"thread_id": chat_session_id},
     }
+
+    chatbot_agent = await get_graph(
+        chat_model_name=chat_model_name,
+        reason_model_name=reason_model_name,
+        checkpointer=checkpointer,
+    )
 
     async for event in chatbot_agent.astream(
         {"messages": [{"role": "user", "content": query}]},
@@ -66,6 +65,12 @@ async def chat(chat_request: ChatRequest):
         "callbacks": [langfuse_handler],
         "configurable": {"thread_id": chat_session_id},
     }
+
+    chatbot_agent = await get_graph(
+        chat_model_name=chat_model_name,
+        reason_model_name=reason_model_name,
+        checkpointer=checkpointer,
+    )
 
     response = chatbot_agent.invoke(
         {"messages": [{"role": "user", "content": q}]}, config=config

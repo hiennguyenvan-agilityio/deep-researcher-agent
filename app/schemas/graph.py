@@ -2,14 +2,25 @@ from typing import Annotated, Literal, Optional, TypedDict
 
 from langgraph.graph import MessagesState
 
-from app.core.langgraph.tools.todo import Todo
+from app.schemas.todo import Todo
 
 
 class AgentState(MessagesState):
     query: Optional[str]
-    action: Optional[Literal["refuse", "ask_user", "proceed"]]
     step: int
     todos: list[Todo]
+    planner_instruction: Optional[str]
+    retries_time: int
+
+
+class GuardState(AgentState):
+    query: Optional[str]
+    action: Optional[Literal["refuse", "ask_user", "proceed"]]
+
+
+class VerifierState(AgentState):
+    planner_instruction: Optional[str]
+    action: Optional[Literal["approved", "next_research", "replan"]]
 
 
 class ResearchAgentState(MessagesState):
@@ -36,3 +47,25 @@ class GatekeeperOutput(TypedDict):
     query: Annotated[
         Optional[str], "If proceed, the fully clarified query to pass to planner."
     ]
+
+
+class VerifierOutput(TypedDict):
+    """Decision returned by the Research Verifier."""
+
+    decision: Literal["approved", "next_research", "replan"]
+    """The next action for the workflow."""
+
+    reason: str
+    """A concise explanation for the decision."""
+
+    planner_instruction: str | None
+    """
+    Instructions for the Planner
+    When decision == "replan". Otherwise, this field should be None.
+
+    Describe how the research plan should be updated. For example:
+    - which pending tasks should be rewritten,
+    - what newly discovered context should be incorporated,
+    - what new research tasks should be added,
+    - which tasks are no longer necessary.
+    """

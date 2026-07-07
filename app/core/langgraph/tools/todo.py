@@ -1,8 +1,13 @@
-from typing import Annotated, Any, Literal, TypedDict
+from typing import Annotated
 
+from fastmcp import FastMCP
 from langchain.messages import ToolMessage
-from langchain.tools import InjectedToolCallId, tool
+from langchain.tools import InjectedToolCallId
 from langgraph.types import Command
+
+from app.schemas.todo import Todo
+
+todo_mcp = FastMCP("todo")
 
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
@@ -42,33 +47,12 @@ Remember: If you only need to make a few tool calls to complete a task, and it i
 `write_todos` tracks your work; it does not deliver the answer. Whatever the user asked for — computations, summaries, comparisons, data — must appear as text content in a message after your final `write_todos` call. Marking the last todo complete is not itself an answer to the user."""
 
 
-class Todo(TypedDict):
-    """A single todo item with content and status."""
-
-    content: str
-    """The content/description of the todo item."""
-
-    status: Literal["pending", "completed"]
-    """The current status of the todo item."""
-
-    step: int
-    (
-        "The execution stage of the task.\n"
-        "\n"
-        "Assign the same step number to tasks that are independent and can be executed\n"
-        "in parallel. Only increment the step when a task depends on the completion or\n"
-        "results of tasks in earlier steps."
-    )
-
-
-@tool(description=WRITE_TODOS_TOOL_DESCRIPTION)
+@todo_mcp.tool(description=WRITE_TODOS_TOOL_DESCRIPTION, tags={"planner"})
 def write_todos(
     todos: list[Todo],
     tool_call_id: Annotated[str, InjectedToolCallId],
-) -> Command[Any]:
+):
     """Create and manage a structured task list for your current work session."""
-
-    print("here")
 
     return Command(
         update={

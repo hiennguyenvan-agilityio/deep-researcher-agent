@@ -7,11 +7,14 @@ GATEKEEPER_PROMPT = Path(f"{current_file_folder}/gatekeeper.md").read_text(
 )
 
 PLANNER_PROMPT = Path(f"{current_file_folder}/planner.md").read_text(encoding="utf-8")
+REPLAN_INTRO = Path(f"{current_file_folder}/replan.md").read_text(encoding="utf-8")
 
-RESEARCHER_PROMPT = Path(f"{current_file_folder}/research.md").read_text(
+RESEARCHER_PROMPT = Path(f"{current_file_folder}/researcher.md").read_text(
     encoding="utf-8"
 )
 
-SYNTHESIS_PROMPT = Path(f"{current_file_folder}/systhesis.md").read_text(
+VERIFIER_PROMPT = Path(f"{current_file_folder}/verifier.md").read_text(encoding="utf-8")
+
+SYNTHESIS_PROMPT = Path(f"{current_file_folder}/synthesiser.md").read_text(
     encoding="utf-8"
 )

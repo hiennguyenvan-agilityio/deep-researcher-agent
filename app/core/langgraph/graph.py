@@ -13,10 +13,17 @@ from app.core.langgraph.nodes import (
 )
 from app.core.langgraph.tools.todo import write_todos
 from app.core.services.llm import initialise_chat_model, initialise_reason_model
-from app.schemas.graph import AgentState
+from app.schemas.graph import AgentState, GuardState, VerifierState
 
 
-def route(state: AgentState):
+def get_tasks(todos, step):
+    """Get tasks for the current step"""
+    return [
+        todo for todo in todos if todo["step"] == step and todo["status"] != "completed"
+    ]
+
+
+def route(state: GuardState):
     return state["action"]
 
 
@@ -24,28 +31,35 @@ def assign_workers(state: AgentState):
     """Assign a worker to each task in todo list"""
 
     todos = state.get("todos", [])
-    current_step = state.get("step")
+    current_step = state.get("step", 1)
 
-    tasks = [
-        todo
-        for todo in todos
-        if todo["step"] == current_step and todo["status"] != "completed"
-    ]
+    tasks = get_tasks(todos, current_step)
 
     if not tasks:
         return "synthesizer"
 
-    return [Send("worker", task["content"]) for task in tasks]
+    return [Send("researcher", task["content"]) for task in tasks]
 
 
-def verifier_route(state: AgentState):
-    return END
+def verifier_route(state: VerifierState):
+    action = state.get("action")
+
+    todos = state.get("todos", [])
+    current_step = state.get("step")
+    retries_time = state.get("retries_time")
+
+    if action == "next_research":
+        tasks = get_tasks(todos, current_step)
+
+        return [Send("researcher", task["content"]) for task in tasks]
+
+    if action == "replan" and retries_time < 5:
+        return "orchestrator"
+
+    return "synthesizer"
 
 
-tools_list = [write_todos]
-
-
-def get_graph(
+async def get_graph(
     chat_model_name: str,
     reason_model_name: Optional[str] = None,
     checkpointer: Optional[Checkpointer] = None,
@@ -59,6 +73,7 @@ def get_graph(
 
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)
     deep_researcher_builder.add_node("orchestrator", orchestrator)
+    tools_list = [write_todos]
     deep_researcher_builder.add_node("tools", ToolNode(tools_list))
     deep_researcher_builder.add_node("researcher", researcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)

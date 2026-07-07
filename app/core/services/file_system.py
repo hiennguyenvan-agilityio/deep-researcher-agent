@@ -1,6 +1,5 @@
 from fs.osfs import OSFS
 
-
 _fs = None
 
 

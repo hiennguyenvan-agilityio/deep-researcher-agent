@@ -7,15 +7,15 @@ from app.schemas.graph import ResearchAgentState
 from app.core.langgraph.tools.search import exa_search_tool
 
 
-def executor(state: ResearchAgentState):
+async def executor(state: ResearchAgentState):
     model_name = os.getenv("REASON_MODEL_NAME")
-    llm = init_chat_model(model=model_name, temperature=0.5).bind_tools(
-        [exa_search_tool]
-    )
+    tools = await [exa_search_tool]
+    llm = init_chat_model(model=model_name, temperature=0.5).bind_tools(tools)
 
     prompt = ChatPromptTemplate(
         [
-            ("human", RESEARCHER_PROMPT),
+            ("system", RESEARCHER_PROMPT),
+            ("human", "{task}"),
             ("placeholder", "{messages}"),
         ]
     )

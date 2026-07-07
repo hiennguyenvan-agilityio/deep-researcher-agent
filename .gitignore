@@ -42,4 +42,4 @@ db/
 
 .deepeval
 .langgraph_api
-
+tmp/
