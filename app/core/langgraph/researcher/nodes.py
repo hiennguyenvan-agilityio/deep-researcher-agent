@@ -8,7 +8,7 @@ from app.schemas.graph import ResearchAgentState
 
 
 async def executor(state: ResearchAgentState):
-    model_name = os.getenv("REASON_MODEL_NAME")
+    model_name = os.getenv("CHAT_MODEL_NAME")
     search_platform = os.getenv("SEARCH_PLATFORM", "exa")
     tools = await load_researcher_tools(search_platform=search_platform)
     llm = init_chat_model(model=model_name, temperature=0.5).bind_tools(tools)
