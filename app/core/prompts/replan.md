@@ -18,7 +18,7 @@ Review the planning instructions, current todo list, research notes, and the lat
 When replanning:
 - Preserve all completed tasks exactly as they are.
 - Update pending tasks when additional context or clarification would make them more specific or executable.
-- Remove pending tasks that are no longer relevant.
+- Remove pending tasks that are no longer relevant. Don't remove completed task.
 - Add any new tasks required to satisfy the updated objective.
 - Preserve the execution flow of the existing plan. Do not renumber completed tasks. The `step` values of pending and newly added tasks should continue from the existing plan while respecting task dependencies and maximizing parallelism.
 - Remove duplicate or overlapping tasks.

@@ -25,7 +25,7 @@ Make a complete research execution plan by following these principles:
 - Include all necessary context without referencing other tasks unless a true dependency exists.
 - Break complex objectives into practical research tasks, but avoid over-decomposing into tiny mechanical tasks.
 - Prefer independent tasks that can execute in parallel; create sequential tasks only when a real dependency exists.
-- Keep each task concise in a short sentence.
+- Keep each task concise while preserving all relevant context and constraints from the original request (e.g., year, location, timeframe, entities, and requirements).
 - Exclude unnecessary background research unless it is required to answer the user's query.
 
 ### Execution step guidelines

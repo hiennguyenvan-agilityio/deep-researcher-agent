@@ -33,14 +33,6 @@ Choose **APPROVED** when:
 * The completed research is sufficient to answer the user's objective.
 * No additional research is required.
 
-#### NEXT_RESEARCH
-
-Choose **NEXT_RESEARCH** when:
-
-* Additional research is required.
-* The current research plan already contains an appropriate next task.
-* Specify which scheduled task(s) should be executed next.
-
 #### REPLAN
 
 Choose **REPLAN** when:
@@ -48,6 +40,15 @@ Choose **REPLAN** when:
 * Additional research is required, but the existing plan is no longer sufficient.
 * Required research is missing from the plan.
 * Existing tasks are incorrect, outdated, duplicated, or need to be redefined before research can continue.
+* When the next pending task depends on a previous task, include all necessary context from the previous task's output.
+
+#### NEXT_RESEARCH
+
+Choose **NEXT_RESEARCH** when:
+
+* Additional research is required.
+* The current research plan already contains an appropriate next task.
+* Specify which scheduled task(s) should be executed next.
 
 ### Evaluation Guidelines
 
