@@ -1,3 +1,5 @@
+import os
+
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
@@ -9,7 +11,9 @@ from app.schemas.graph import ResearchAgentState
 async def get_graph():
     researcher_builder = StateGraph(ResearchAgentState)
 
-    tools_list = await load_researcher_tools(search_platform="exa")
+    search_platform = os.getenv("SEARCH_PLATFORM", "exa")
+
+    tools_list = await load_researcher_tools(search_platform=search_platform)
 
     researcher_builder.add_node("executor", executor)
     researcher_builder.add_node("tools", ToolNode(tools_list))

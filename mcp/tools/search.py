@@ -18,14 +18,24 @@ def tavily_search(query: str) -> str:
     """
     Search the web using Tavily and return the results.
     """
-    search_tool = TavilySearch(
+    search_tool1 = TavilySearch(
         max_results=5,
         topic="general",
     )
 
-    result = search_tool._run(query)
+    response = search_tool1._run(query)
+    results = response["results"]
 
-    return json.dumps(result.model_dump())
+    data = [
+        {
+            "title": r["title"],
+            "url": r["url"],
+            "text": r["content"],
+        }
+        for r in results
+    ]
+
+    return json.dumps(data)
 
 
 @search_mcp.tool(tags={"exa"})
@@ -37,18 +47,19 @@ def exa_search_tool(query: str) -> str:
 
     search_tool = ExaSearchResults(exa_api_key=EXA_API_KEY)
 
-    result = search_tool._run(query, num_results=5)
+    response = search_tool._run(query, num_results=5, summary=True)
+    results = response.results
 
-    results = [
+    data = [
         {
             "title": r.title,
             "url": r.url,
-            "text": r.text,
+            "text": r.summary,
         }
-        for r in result.results
+        for r in results
     ]
 
-    return json.dumps(results)
+    return json.dumps(data)
 
 
 @search_mcp.tool(tags={"duckduckgo"})
@@ -59,6 +70,16 @@ def duckduckgo_search_tool(query: str) -> str:
 
     search_tool = DuckDuckGoSearchResults(num_results=5, handle_tool_error=True)
 
-    result = search_tool._run(query)
+    response = search_tool._run(query)
+    _, results = response
 
-    return json.dumps(result.model_dump())
+    data = [
+        {
+            "title": r["title"],
+            "url": r["link"],
+            "text": r["snippet"],
+        }
+        for r in results
+    ]
+
+    return json.dumps(data)

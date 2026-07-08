@@ -13,6 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from app.core.langgraph.graph import get_graph
 from app.core.services.file_system import get_fs
 from app.core.services.langfuse import get_instance
+from app.core.utils.llm import get_text_from_llm_response
 
 load_dotenv()
 
@@ -55,7 +56,7 @@ async def run_experiment(row):
         response = await deep_researcher_agent.ainvoke(
             {"messages": [{"role": "user", "content": question}]}, config
         )
-        prediction = response["messages"][-1].content
+        prediction = get_text_from_llm_response(response["messages"][-1])
 
         # Calculate the correctness metric
         answer_accuracy_score = await answer_accuracy.ascore(
