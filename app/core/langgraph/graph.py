@@ -51,6 +51,9 @@ def verifier_route(state: VerifierState):
     if action == "next_research":
         tasks = get_tasks(todos, current_step)
 
+        if not tasks:
+            return "synthesizer"
+
         return [Send("researcher", task["content"]) for task in tasks]
 
     if action == "replan" and retries_time < 5:

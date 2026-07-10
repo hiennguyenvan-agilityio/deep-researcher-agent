@@ -48,6 +48,10 @@ def exa_search_tool(query: str) -> str:
     search_tool = ExaSearchResults(exa_api_key=EXA_API_KEY)
 
     response = search_tool._run(query, num_results=5, summary=True)
+
+    if isinstance(response, str):
+        return response
+
     results = response.results
 
     data = [
