@@ -1,5 +1,6 @@
 from typing import Annotated, Literal, Optional, TypedDict
 
+from langchain.messages import AnyMessage
 from langgraph.graph import MessagesState
 
 from app.schemas.todo import Todo
@@ -7,14 +8,12 @@ from app.schemas.todo import Todo
 
 class AgentState(MessagesState):
     query: Optional[str]
-    step: int
     todos: list[Todo]
-    planner_instruction: Optional[str]
     retries_time: int
+    orchestrator_messages: list[AnyMessage]
 
 
 class GuardState(AgentState):
-    query: Optional[str]
     action: Optional[Literal["refuse", "ask_user", "proceed"]]
 
 

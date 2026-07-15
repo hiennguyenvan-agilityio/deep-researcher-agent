@@ -15,15 +15,15 @@ from app.core.services.llm import initialise_chat_model, initialise_reason_model
 from app.schemas.graph import AgentState, GuardState
 
 
-def get_tasks(todos, step):
-    """Get tasks for the current step"""
-    return [
-        todo for todo in todos if todo["step"] == step and todo["status"] != "completed"
-    ]
-
-
 def route(state: GuardState):
     return state["action"]
+
+
+def orchestrator_tools_condition(state):
+    return tools_condition(
+        state,
+        messages_key="orchestrator_messages",
+    )
 
 
 def assign_workers(state: AgentState):
@@ -48,7 +48,9 @@ async def get_graph(
 
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)
     tools_list = [write_todos]
-    deep_researcher_builder.add_node("tools", ToolNode(tools_list))
+    deep_researcher_builder.add_node(
+        "tools", ToolNode(tools_list, messages_key="orchestrator_messages")
+    )
     deep_researcher_builder.add_node("orchestrator", orchestrator)
     deep_researcher_builder.add_node("searcher", searcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)
@@ -61,7 +63,7 @@ async def get_graph(
     )
     deep_researcher_builder.add_conditional_edges(
         "orchestrator",
-        tools_condition,
+        orchestrator_tools_condition,
         {"tools": "tools", END: "synthesizer"},
     )
     deep_researcher_builder.add_conditional_edges("tools", assign_workers, ["searcher"])

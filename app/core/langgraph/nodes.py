@@ -57,7 +57,7 @@ async def orchestrator(state: AgentState, config: RunnableConfig):
     retries_time = state.get("retries_time", -1) + 1
 
     if retries_time > int(os.getenv("MAX_RETRIES", 5)):
-        return Command(goto="systhesis")
+        return Command(goto="synthesizer")
 
     # llm = get_reason_model().bind_tools([write_todos])
     model_name = os.getenv("REASON_MODEL_NAME")
@@ -89,7 +89,7 @@ async def orchestrator(state: AgentState, config: RunnableConfig):
         }
     )
 
-    return {"messages": response, "retries_time": retries_time}
+    return {"orchestrator_messages": [response], "retries_time": retries_time}
 
 
 async def searcher(task: str):
@@ -123,12 +123,14 @@ def synthesizer(state: AgentState, config: RunnableConfig):
     prompt = ChatPromptTemplate(
         [
             ("system", SYNTHESIS_PROMPT),
-            ("human", "{query}"),
+            ("placeholder", "{messages}"),
         ]
     )
 
     chain = prompt | llm
 
-    response = chain.invoke({"query": state["query"], "research_note": research_notes})
+    response = chain.invoke(
+        {"messages": state["messages"], "research_note": research_notes}
+    )
 
     return {"messages": response}

@@ -58,7 +58,7 @@ def write_todos(
     return Command(
         update={
             "todos": completed_task + todos,
-            "messages": [
+            "orchestrator_messages": [
                 ToolMessage(
                     content="Write todo call success.",
                     tool_call_id=tool_call_id,

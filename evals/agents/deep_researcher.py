@@ -18,7 +18,7 @@ from app.core.utils.llm import get_text_from_llm_response
 load_dotenv()
 
 client = AsyncOpenAI()
-llm = llm_factory("gpt-4o-mini", client=client)
+llm = llm_factory("gpt-4o-mini", client=client, max_tokens=4096)
 
 answer_accuracy = AnswerAccuracy(llm=llm)
 faithfulness = Faithfulness(llm=llm)
