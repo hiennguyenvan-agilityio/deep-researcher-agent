@@ -3,16 +3,16 @@ import {
   copilotRuntimeNextJSAppRouterEndpoint,
 } from "@copilotkit/runtime";
 import { NextRequest } from "next/server";
-import { LangGraphAgent } from "@copilotkit/runtime/langgraph";
+import { LangGraphHttpAgent } from "@copilotkit/runtime/langgraph";
 
 const runtime = new CopilotRuntime({
   agents: {
-    default: new LangGraphAgent({
-      deploymentUrl: "http://localhost:2024",
-      graphId: "Deep researcher",
+    default: new LangGraphHttpAgent({
+      url:  "http://localhost:8000/deep_researcher",
     }),
-  },
+  }
 });
+
 
 export const POST = async (req: NextRequest) => {
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
