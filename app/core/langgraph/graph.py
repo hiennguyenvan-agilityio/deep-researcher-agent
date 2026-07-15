@@ -1,19 +1,18 @@
 from typing import Optional
 
 from langgraph.graph import END, MessagesState, StateGraph
-from langgraph.prebuilt import ToolNode
+from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.types import Checkpointer, Send
 
 from app.core.langgraph.nodes import (
     gatekeeper,
     orchestrator,
+    searcher,
     synthesizer,
-    verifier,
-    researcher,
 )
 from app.core.langgraph.tools.todo import write_todos
 from app.core.services.llm import initialise_chat_model, initialise_reason_model
-from app.schemas.graph import AgentState, GuardState, VerifierState
+from app.schemas.graph import AgentState, GuardState
 
 
 def get_tasks(todos, step):
@@ -30,36 +29,9 @@ def route(state: GuardState):
 def assign_workers(state: AgentState):
     """Assign a worker to each task in todo list"""
 
-    todos = state.get("todos", [])
-    current_step = state.get("step", 1)
+    pending_todos = [todo for todo in state["todos"] if todo["status"] == "pending"]
 
-    tasks = get_tasks(todos, current_step)
-
-    if not tasks:
-        return "synthesizer"
-
-    return [Send("researcher", task["content"]) for task in tasks]
-
-
-def verifier_route(state: VerifierState):
-    action = state.get("action")
-
-    todos = state.get("todos", [])
-    current_step = state.get("step")
-    retries_time = state.get("retries_time")
-
-    if action == "next_research":
-        tasks = get_tasks(todos, current_step)
-
-        if not tasks:
-            return "synthesizer"
-
-        return [Send("researcher", task["content"]) for task in tasks]
-
-    if action == "replan" and retries_time < 5:
-        return "orchestrator"
-
-    return "synthesizer"
+    return [Send("searcher", task["content"]) for task in pending_todos]
 
 
 async def get_graph(
@@ -75,12 +47,11 @@ async def get_graph(
     )
 
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)
-    deep_researcher_builder.add_node("orchestrator", orchestrator)
     tools_list = [write_todos]
     deep_researcher_builder.add_node("tools", ToolNode(tools_list))
-    deep_researcher_builder.add_node("researcher", researcher)
+    deep_researcher_builder.add_node("orchestrator", orchestrator)
+    deep_researcher_builder.add_node("searcher", searcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)
-    deep_researcher_builder.add_node("verifier", verifier)
 
     deep_researcher_builder.set_entry_point("gatekeeper")
     deep_researcher_builder.add_conditional_edges(
@@ -88,16 +59,13 @@ async def get_graph(
         route,
         {"refuse": END, "ask_user": END, "proceed": "orchestrator"},
     )
-
-    deep_researcher_builder.add_edge("orchestrator", "tools")
-
     deep_researcher_builder.add_conditional_edges(
-        "tools", assign_workers, ["researcher", "synthesizer"]
+        "orchestrator",
+        tools_condition,
+        {"tools": "tools", END: "synthesizer"},
     )
-    deep_researcher_builder.add_edge("researcher", "verifier")
-    deep_researcher_builder.add_conditional_edges(
-        "verifier", verifier_route, ["researcher", "orchestrator", "synthesizer"]
-    )
+    deep_researcher_builder.add_conditional_edges("tools", assign_workers, ["searcher"])
+    deep_researcher_builder.add_edge("searcher", "orchestrator")
     deep_researcher_builder.add_edge("synthesizer", END)
 
     deep_researcher_agent = deep_researcher_builder.compile(checkpointer=checkpointer)

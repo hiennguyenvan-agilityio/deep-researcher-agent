@@ -89,7 +89,7 @@ async def main():
     current_file_folder = pathlib.Path(__file__).parent.resolve()
 
     dataset = Dataset.load(
-        name="gaia_text_10",
+        name="one_research_queries",
         backend="local/csv",
         root_dir=current_file_folder,
     )

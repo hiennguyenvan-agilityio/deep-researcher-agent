@@ -15,7 +15,7 @@ from ragas.messages import AIMessage, ToolCall
 from ragas.metrics import MetricResult, numeric_metric
 
 from app.core.langgraph.tools.todo import write_todos
-from app.core.prompts import PLANNER_PROMPT
+from app.core.prompts import ORCHESTRATOR_PROMPT
 from app.schemas.todo import Todo
 
 load_dotenv()
@@ -73,7 +73,7 @@ async def run_experiment(row):
 
         prompt = ChatPromptTemplate(
             [
-                ("system", PLANNER_PROMPT),
+                ("system", ORCHESTRATOR_PROMPT),
                 ("human", "{query}"),
             ]
         )
@@ -83,7 +83,6 @@ async def run_experiment(row):
 
         # We only need to verify that the write_todos tool is called. Since ToolCall requires arguments, we ignore the actual arguments by passing the expected reference arguments.
         args = response.tool_calls[0]["args"]
-        todos = args["todos"]
 
         reference_tool_calls = [
             ToolCall(
@@ -111,19 +110,19 @@ async def run_experiment(row):
             reference_tool_calls=reference_tool_calls,
         )
 
-        quality_check_result = await quality_check.ascore(query=query, tasks=todos)
+        # quality_check_result = await quality_check.ascore(query=query, tasks=todos)
 
         return {
             "query": query,
             "tool_call_accuracy": tool_call_accuracy_result.value,
-            "quality": quality_check_result.value,
-            "suggestions": quality_check_result.reason,
+            # "quality": quality_check_result.value,
+            # "suggestions": quality_check_result.reason,
         }
 
 
 async def main():
     dataset = Dataset.load(
-        name="planner_queries",
+        name="one_planner_queries",
         backend="local/csv",
         root_dir=current_file_folder,
     )
