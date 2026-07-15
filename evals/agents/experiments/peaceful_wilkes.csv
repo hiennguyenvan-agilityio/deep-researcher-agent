@@ -1,0 +1,8 @@
+thread_id,question,prediction,answer_accuracy,faithfulness,reason
+f786603a-0dd0-4bae-9d37-431d030d485d,What was the complete title of the book in which two James Beard Award winners recommended the restaurant where Ali Khan enjoyed a New Mexican staple in his cost-conscious TV show that started in 2015? Write the numbers in plain text if there are some in the title.,"The restaurant featured in the Albuquerque episode of the television show *Cheap Eats* (hosted by Ali Khan) that served a signature New Mexican food item is **Papa Felipe's Mexican Restaurant**. During the episode, host Ali Khan highlighted the restaurant's carne adovada stuffed inside a sopaipilla.
+
+The restaurant is recommended in a book authored by Jane and Michael Stern—both of whom are recipients of multiple James Beard Awards. The full title of the book, with numbers written as text, is:
+
+***Five Hundred Things to Eat Before It’s Too Late: And the Very Best Places to Eat Them***
+
+In this guide, the authors highlight Papa Felipe's for its standout New Mexican dishes, specifically praising their green-chile-marinated pork (carne adovada) and their green tamale pie.",0.5,1.0,

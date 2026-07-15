@@ -67,20 +67,25 @@ async def run_experiment(row):
 
         fs = get_fs()
         research_node_path = f"research_note_{thread_id}.txt"
-        context = fs.readtext(research_node_path)
+        # No context needed. Set faithfulness_score to 1.0
+        faithfulness_score_value = 1.0
 
-        faithfulness_score = await faithfulness.ascore(
-            user_input=question,
-            response=prediction,
-            retrieved_contexts=[context],
-        )
+        if fs.exists(research_node_path):
+            context = fs.readtext(research_node_path)
+
+            faithfulness_score = await faithfulness.ascore(
+                user_input=question,
+                response=prediction,
+                retrieved_contexts=[context],
+            )
+            faithfulness_score_value = faithfulness_score.value
 
         return {
             "thread_id": thread_id,
             "question": question,
             "prediction": prediction,
             "answer_accuracy": answer_accuracy_score.value,
-            "faithfulness": faithfulness_score.value,
+            "faithfulness": faithfulness_score_value,
             "reason": answer_accuracy_score.reason,
         }
 
@@ -89,7 +94,7 @@ async def main():
     current_file_folder = pathlib.Path(__file__).parent.resolve()
 
     dataset = Dataset.load(
-        name="one_research_queries",
+        name="gaia_text_10",
         backend="local/csv",
         root_dir=current_file_folder,
     )

@@ -113,7 +113,10 @@ def synthesizer(state: AgentState, config: RunnableConfig):
 
     research_node_path = f"research_note_{thread_id}.txt"
 
-    research_note = fs.readtext(research_node_path)
+    research_notes = None
+
+    if fs.exists(research_node_path):
+        research_notes = fs.readtext(research_node_path)
 
     llm = get_reason_model()
 
@@ -126,6 +129,6 @@ def synthesizer(state: AgentState, config: RunnableConfig):
 
     chain = prompt | llm
 
-    response = chain.invoke({"query": state["query"], "research_note": research_note})
+    response = chain.invoke({"query": state["query"], "research_note": research_notes})
 
     return {"messages": response}

@@ -20,6 +20,7 @@ Analyze the current research notes and the user's request together, decide one o
 - Each task must:
   - represent a single search objective,
   - be self-contained with all required context,
+  - If the task depends on any data as table, list, dataset, code, equation, passage, or other structured input, ..., include that input verbatim in the task description. Never refer to "the provided", "above", "below", "following", "attached", or "original" material.
   - be independently executable,
   - be runnable in parallel whenever possible.
 - Create confirmation or verification tasks only when information from multiple sources conflicts or appears biased.
