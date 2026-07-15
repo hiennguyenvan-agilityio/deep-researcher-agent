@@ -93,7 +93,7 @@ async def orchestrator(state: AgentState, config: RunnableConfig):
 
 
 async def searcher(task: str):
-    """"""
+    """Execute a single search task."""
 
     model_name = os.getenv("CHAT_MODEL_NAME")
     search_platform = os.getenv("SEARCH_PLATFORM", "exa")
@@ -107,6 +107,7 @@ async def searcher(task: str):
 
 
 def synthesizer(state: AgentState, config: RunnableConfig):
+    """Synthesis and generate the final response"""
     thread_id = config["configurable"]["thread_id"]
     fs = get_fs()
 
