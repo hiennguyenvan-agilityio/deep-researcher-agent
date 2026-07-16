@@ -1,6 +1,8 @@
 # The Deep Researcher
 
-This project showcases a practical implementation build of the deep researcher.
+A practical implementation of a Deep Researcher agent built with LangGraph, LangChain, and modern LLMs. The project demonstrates how multiple specialized agents collaborate to orchestrator, researcher, and synthesizer comprehensive answers.
+
+## High-level Architecture
 
 ![High-level Architecture](images/high-level_architecture.png)
 
@@ -10,15 +12,17 @@ This project showcases a practical implementation build of the deep researcher.
 
 ## Techstack:
 
-- Model
-    - OpenAI: gpt-5.1
-    - Google: Gemini 3.1 Flash Lite
+### AI Models
+- OpenAI: gpt-5.1
+- Google: Gemini 3.1 Flash Lite
+
+### Frameworks & Libraries
 - Python v3.14
 - LangChain v1.3.9
 - LangGraph v1.2.5
-- LangFuse
 - FastAPI
 - CopilotKit
+- LangFuse
 
 ## Dependencies
 
@@ -40,33 +44,64 @@ cd ai-training/deep_researcher_agent
 
 - Ensure Docker is running.
 - Open the project folder (`deep_researcher_agent`) in Visual Studio Code.
+- Reopen the project in the Dev Container
 - VSCode will automatically create a dev container in Docker.
 
-### 3. Set Up Environment Variables
+### 3. Running the Application
 
-- Duplicate the sample environment variables file `.env.sample` to `.env`.
-- Replace placeholder values with your actual environment variables (e.g., `OPENAI_API_KEY`, ...).
+#### Install Dependencies
 
-### 4. Run the backend server
+> Skip this step if you're using the Dev Container.
 
-There are two ways to run the development server:
+Install the project dependencies with **uv**.
 
-#### Using Langgraph cli
-Start the LangGraph development server:
 ```bash
-langgraph dev
+uv sync
 ```
 
-The server will be available at http://localhost:2024.
+If you don't have `uv` installed, follow the installation guide:
 
-You can then interact with the agent local server using [LangSmith Studio](https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024)
+https://docs.astral.sh/uv/
 
-#### Run fastapi server
-Start server
+#### Set Up Environment Variables
+
+Copy the sample environment file:
+
 ```bash
-PYTHONPATH=. fastapi dev
+cp .env.sample .env
+cp mcp/.env.sample mcp/.env
 ```
 
-The server will be available at http://localhost:8000.
+Replace placeholder values with your actual environment variables (e.g., `OPENAI_API_KEY`, ...).
 
-The chat endpoint is available at **http://localhost:8000/chat**. It provides a **streaming API** (Server-Sent Events), so your client should process the response incrementally as it is streamed.
+#### Start the MCP Server
+
+```bash
+cd mcp
+uv run main.py
+```
+
+#### Start the FastAPI Server
+
+```bash
+uv run fastapi dev
+```
+
+The backend will be available at:
+
+* **Base URL:** `http://localhost:8000`
+* **Chat API:** `http://localhost:8000/api/v1/chatbot/chat`
+* **Streaming Chat API:** `http://localhost:8000/api/v1/chatbot/chat/stream`
+* **CopilotKit Deep Researcher API:** `http://localhost:8000/copilotkit/deep_researcher/`
+
+> The CopilotKit endpoint can be integrated with CopilotKit using LangGraphHttpAgent. See the CopilotKit LangGraph FastAPI Quickstart for setup instructions: https://docs.copilotkit.ai/langgraph-fastapi/quickstart?agent=bring-your-own
+
+#### Running the Web Application
+
+```bash
+cd webapp
+npm install
+npm run dev
+```
+
+The web application will start in development mode and connect to the backend running on `http://localhost:8080`.

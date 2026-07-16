@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
             description="An example agent.",
             graph=graph,
         ),
-        path="/deep_researcher",
+        path="/copilotkit/deep_researcher",
     )
 
     yield

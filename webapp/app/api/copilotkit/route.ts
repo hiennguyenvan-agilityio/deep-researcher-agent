@@ -8,7 +8,7 @@ import { LangGraphHttpAgent } from "@copilotkit/runtime/langgraph";
 const runtime = new CopilotRuntime({
   agents: {
     default: new LangGraphHttpAgent({
-      url:  "http://localhost:8000/deep_researcher",
+      url:  process.env.DEEP_RESERACH_AGENT_URL || "http://localhost:8000/copilotkit/deep_researcher",
     }),
   }
 });
