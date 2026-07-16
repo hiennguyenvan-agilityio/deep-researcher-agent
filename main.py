@@ -14,7 +14,6 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from app.core.langgraph.graph import get_graph
 
-
 chat_model_name = os.getenv(
     "CHAT_MODEL_NAME", "google_genai:gemini-3.1-flash-lite-preview"
 )

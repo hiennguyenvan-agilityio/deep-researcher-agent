@@ -1,6 +1,7 @@
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 
 class ChatRequest(TypedDict):
-    q: str
+    q: NotRequired[str]
+    action: NotRequired[Literal["approve", "cancel"]]
     chat_session_id: NotRequired[str]
