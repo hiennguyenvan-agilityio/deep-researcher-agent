@@ -7,6 +7,7 @@ from langgraph.types import Checkpointer, Send
 from app.core.langgraph.nodes import (
     gatekeeper,
     orchestrator,
+    request_confirmation,
     searcher,
     synthesizer,
 )
@@ -54,12 +55,13 @@ async def get_graph(
     deep_researcher_builder.add_node("orchestrator", orchestrator)
     deep_researcher_builder.add_node("searcher", searcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)
+    deep_researcher_builder.add_node("request_confirmation", request_confirmation)
 
     deep_researcher_builder.set_entry_point("gatekeeper")
     deep_researcher_builder.add_conditional_edges(
         "gatekeeper",
         route,
-        {"refuse": END, "ask_user": END, "proceed": "orchestrator"},
+        {"refuse": END, "ask_user": END, "proceed": "request_confirmation"},
     )
     deep_researcher_builder.add_conditional_edges(
         "orchestrator",

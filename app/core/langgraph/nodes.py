@@ -22,6 +22,7 @@ from app.schemas.graph import (
     GatekeeperOutput,
 )
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import interrupt
 
 
 def gatekeeper(state: AgentState):
@@ -49,6 +50,23 @@ def gatekeeper(state: AgentState):
     message = response.get("message")
 
     return {"messages": AIMessage(content=message), "action": action}
+
+
+async def request_confirmation(state: AgentState):
+    approved = interrupt(
+        {
+            "message": (
+                "Please help review your request before I begin.\n"
+                "\n"
+                f"{state['query']}\n"
+                "\n"
+                "Click Approve to continue or Cancel to make changes."
+            )
+        }
+    )
+
+    if approved:
+        return Command(goto="orchestrator")
 
 
 async def orchestrator(state: AgentState, config: RunnableConfig):
