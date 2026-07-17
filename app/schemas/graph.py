@@ -10,7 +10,7 @@ from app.schemas.todo import Todo
 class AgentState(MessagesState):
     query: Optional[str]
     todos: list[Todo]
-    retries_time: int
+    loop_count: int
     orchestrator_messages: list[AnyMessage]
     execution_id: str
 

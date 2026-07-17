@@ -88,9 +88,9 @@ async def request_confirmation(state: AgentState):
 async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     """Orchestrator that generates a plan for the researcher"""
 
-    retries_time = state.get("retries_time", -1) + 1
+    loop_count = state.get("loop_count", -1) + 1
 
-    if retries_time > int(os.getenv("MAX_RETRIES", 5)):
+    if loop_count > int(os.getenv("LOOP_LIMIT", 5)):
         return Command(goto="synthesizer")
 
     context = runtime.context
@@ -127,7 +127,7 @@ async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
         }
     )
 
-    return {"orchestrator_messages": [response], "retries_time": retries_time}
+    return {"orchestrator_messages": [response], "loop_count": loop_count}
 
 
 async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
