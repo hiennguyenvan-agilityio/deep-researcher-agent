@@ -12,7 +12,6 @@ from app.core.langgraph.nodes import (
     synthesizer,
 )
 from app.core.langgraph.tools.todo import write_todos
-from app.core.services.llm import initialise_chat_model, initialise_reason_model
 from app.schemas.graph import AgentContext, AgentState, GuardState
 
 
@@ -35,14 +34,7 @@ def assign_workers(state: AgentState):
     return [Send("searcher", task["content"]) for task in pending_todos]
 
 
-async def get_graph(
-    chat_model_name: str,
-    reason_model_name: Optional[str] = None,
-    checkpointer: Optional[Checkpointer] = None,
-):
-    initialise_chat_model(chat_model_name)
-    initialise_reason_model(reason_model_name or chat_model_name)
-
+async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder = StateGraph(
         AgentState,
         input_schema=MessagesState,

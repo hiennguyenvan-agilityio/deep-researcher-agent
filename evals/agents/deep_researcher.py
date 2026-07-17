@@ -14,6 +14,7 @@ from app.core.langgraph.graph import get_graph
 from app.core.services.file_system import get_fs
 from app.core.services.langfuse import get_instance
 from app.core.utils.llm import get_text_from_llm_response
+from app.schemas.graph import AgentContext
 
 load_dotenv()
 
@@ -45,24 +46,20 @@ async def run_experiment(row):
             question = row["question"]
             answer = row["answer"]
 
-            chat_model_name = os.getenv("CHAT_MODEL_NAME")
-            reason_model_name = os.getenv("REASON_MODEL_NAME")
-
-            deep_researcher_agent = await get_graph(
-                chat_model_name=chat_model_name,
-                reason_model_name=reason_model_name,
-                checkpointer=checkpointer,
-            )
+            deep_researcher_agent = await get_graph(checkpointer=checkpointer)
 
             thread_id = str(uuid.uuid4())
             config = {
                 "callbacks": [langfuse_handler],
                 "configurable": {"thread_id": thread_id},
             }
+            run_id = str(uuid.uuid4())
 
             # Get the model's prediction
             response = await deep_researcher_agent.ainvoke(
-                {"messages": [{"role": "user", "content": question}]}, config
+                {"messages": [{"role": "user", "content": question}]},
+                config=config,
+                context=AgentContext(run_id=run_id),
             )
             prediction = get_text_from_llm_response(response["messages"][-1])
 
@@ -74,7 +71,7 @@ async def run_experiment(row):
             )
 
             fs = get_fs()
-            research_node_path = f"research_note_{thread_id}.txt"
+            research_node_path = f"{thread_id}/research_note_{run_id}.txt"
             # No context needed. Set faithfulness_score to 1.0
             faithfulness_score_value = 1.0
 

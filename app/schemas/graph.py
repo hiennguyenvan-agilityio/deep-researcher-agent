@@ -42,5 +42,6 @@ class GatekeeperOutput(TypedDict):
 
 @dataclass
 class AgentContext:
+    run_id: str
     reason_model_name: Optional[str] = None
     chat_model_name: Optional[str] = None

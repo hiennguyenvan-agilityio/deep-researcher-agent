@@ -18,13 +18,6 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 router = APIRouter()
 
-chat_model_name = os.getenv(
-    "CHAT_MODEL_NAME", "google_genai:gemini-3.1-flash-lite-preview"
-)
-reason_model_name = os.getenv(
-    "REASON_MODEL_NAME", "google_genai:gemini-3.1-flash-lite-preview"
-)
-
 langfuse_handler = get_instance()
 
 DB_URI = (
@@ -48,11 +41,7 @@ async def stream_from_agent(
             "configurable": {"thread_id": chat_session_id},
         }
 
-        chatbot_agent = await get_graph(
-            chat_model_name=chat_model_name,
-            reason_model_name=reason_model_name,
-            checkpointer=checkpointer,
-        )
+        chatbot_agent = await get_graph(checkpointer=checkpointer)
 
         if action is not None:
             graph_input = Command(resume=(action == "approve"))
@@ -112,11 +101,7 @@ async def chat(chat_request: ChatRequest):
             "configurable": {"thread_id": chat_session_id},
         }
 
-        chatbot_agent = await get_graph(
-            chat_model_name=chat_model_name,
-            reason_model_name=reason_model_name,
-            checkpointer=checkpointer,
-        )
+        chatbot_agent = await get_graph(checkpointer=checkpointer)
 
         if action is not None:
             # Resume from an interrupt

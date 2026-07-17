@@ -4,6 +4,7 @@ from langchain.messages import ToolMessage
 from langchain.tools import InjectedToolCallId, ToolRuntime, tool
 from langgraph.types import Command
 
+from app.schemas.graph import AgentContext
 from app.schemas.todo import Todo
 
 WRITE_TODOS_TOOL_DESCRIPTION = """Use this tool to create and manage a structured task list for your current work session. This helps you track progress and organize complex tasks.
@@ -47,7 +48,7 @@ Remember: If you only need to make a few tool calls to complete a task, and it i
 def write_todos(
     todos: list[Todo],
     tool_call_id: Annotated[str, InjectedToolCallId],
-    runtime: ToolRuntime,
+    runtime: ToolRuntime[AgentContext],
 ):
     """Create and manage a structured task list for your current work session."""
 

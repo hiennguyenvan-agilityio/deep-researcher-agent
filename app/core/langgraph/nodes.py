@@ -5,7 +5,6 @@ from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.types import Command, interrupt
-from langchain_core.runnables import RunnableConfig
 from langgraph.runtime import Runtime
 
 from app.core.langgraph.tools.mcp import load_researcher_tools
@@ -19,12 +18,13 @@ from app.core.prompts import (
 )
 from app.core.services.file_system import get_fs
 from app.schemas.graph import (
+    AgentContext,
     AgentState,
     GatekeeperOutput,
 )
 
 
-def gatekeeper(state: AgentState, runtime: Runtime):
+def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
     """Perform safety/clarity/enhancement check and return structured decision."""
 
     context = runtime.context
@@ -72,8 +72,10 @@ async def request_confirmation(state: AgentState):
     if approved:
         return Command(goto="orchestrator")
 
+    return Command(goto="orchestrator")
 
-async def orchestrator(state: AgentState, config: RunnableConfig, runtime: Runtime):
+
+async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     """Orchestrator that generates a plan for the researcher"""
 
     retries_time = state.get("retries_time", -1) + 1
@@ -89,10 +91,11 @@ async def orchestrator(state: AgentState, config: RunnableConfig, runtime: Runti
 
     llm = init_chat_model(model=model_name, temperature=0).bind_tools(tools)
 
-    thread_id = config["configurable"]["thread_id"]
+    thread_id = runtime.execution_info.thread_id
+    run_id = runtime.context.run_id
     fs = get_fs()
 
-    research_node_path = f"research_note_{thread_id}.txt"
+    research_node_path = f"{thread_id}/research_note_{run_id}.txt"
 
     research_notes = None
 
@@ -117,7 +120,7 @@ async def orchestrator(state: AgentState, config: RunnableConfig, runtime: Runti
     return {"orchestrator_messages": [response], "retries_time": retries_time}
 
 
-async def searcher(task: str, runtime: Runtime):
+async def searcher(task: str, runtime: Runtime[AgentContext]):
     """Execute a single search task."""
 
     context = runtime.context
@@ -136,12 +139,13 @@ async def searcher(task: str, runtime: Runtime):
     return
 
 
-def synthesizer(state: AgentState, config: RunnableConfig, runtime: Runtime):
+def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
     """Synthesis and generate the final response"""
-    thread_id = config["configurable"]["thread_id"]
+    thread_id = runtime.execution_info.thread_id
+    run_id = runtime.context.run_id
     fs = get_fs()
 
-    research_node_path = f"research_note_{thread_id}.txt"
+    research_node_path = f"{thread_id}/research_note_{run_id}.txt"
 
     research_notes = None
 

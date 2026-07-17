@@ -6,15 +6,7 @@ from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-
 from app.core.langgraph.graph import get_graph
-
-chat_model_name = os.getenv(
-    "CHAT_MODEL_NAME", "google_genai:gemini-3.1-flash-lite-preview"
-)
-reason_model_name = os.getenv(
-    "REASON_MODEL_NAME", "google_genai:gemini-3.1-flash-lite-preview"
-)
 
 
 @asynccontextmanager
@@ -29,11 +21,7 @@ async def lifespan(app: FastAPI):
     )
 
     async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
-        graph = await get_graph(
-            chat_model_name=chat_model_name,
-            reason_model_name=reason_model_name,
-            checkpointer=checkpointer,
-        )
+        graph = await get_graph(checkpointer=checkpointer)
 
         add_langgraph_fastapi_endpoint(
             app=app,
