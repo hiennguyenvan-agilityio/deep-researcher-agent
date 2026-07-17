@@ -13,7 +13,7 @@ from app.core.langgraph.nodes import (
 )
 from app.core.langgraph.tools.todo import write_todos
 from app.core.services.llm import initialise_chat_model, initialise_reason_model
-from app.schemas.graph import AgentState, GuardState
+from app.schemas.graph import AgentContext, AgentState, GuardState
 
 
 def route(state: GuardState):
@@ -44,7 +44,10 @@ async def get_graph(
     initialise_reason_model(reason_model_name or chat_model_name)
 
     deep_researcher_builder = StateGraph(
-        AgentState, input_schema=MessagesState, output_schema=MessagesState
+        AgentState,
+        input_schema=MessagesState,
+        output_schema=MessagesState,
+        context_schema=AgentContext,
     )
 
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)

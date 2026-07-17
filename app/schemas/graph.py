@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Annotated, Literal, Optional, TypedDict
 
 from langchain.messages import AnyMessage
@@ -37,3 +38,9 @@ class GatekeeperOutput(TypedDict):
     query: Annotated[
         Optional[str], "If proceed, the fully clarified query to pass to planner."
     ]
+
+
+@dataclass
+class AgentContext:
+    reason_model_name: Optional[str] = None
+    chat_model_name: Optional[str] = None
