@@ -52,8 +52,8 @@ def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
 
     if action == "proceed":
         query = response.get("query")
-        # Automatic set execution_id if not exist
-        execution_id = state.get("execution_id") or str(uuid.uuid4())
+        # Automatic set execution_id each invoke run
+        execution_id = str(uuid.uuid4())
 
         return {
             # Reset state during each invoke, except resume
