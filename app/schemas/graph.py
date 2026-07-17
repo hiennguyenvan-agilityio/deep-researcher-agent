@@ -12,6 +12,7 @@ class AgentState(MessagesState):
     todos: list[Todo]
     retries_time: int
     orchestrator_messages: list[AnyMessage]
+    execution_id: str
 
 
 class GuardState(AgentState):
@@ -42,6 +43,14 @@ class GatekeeperOutput(TypedDict):
 
 @dataclass
 class AgentContext:
-    run_id: str
     reason_model_name: Optional[str] = None
     chat_model_name: Optional[str] = None
+
+
+class SearchWorkerState(TypedDict):
+    task: str
+    execution_id: str
+
+
+class SearcherState(MessagesState):
+    execution_id: str

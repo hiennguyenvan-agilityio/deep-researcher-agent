@@ -62,7 +62,6 @@ async def stream_from_agent(
             config=config,
             subgraphs=True,
         ):
-            print("event", event)
             message, metadata = event["data"]
 
             yield json.dumps(

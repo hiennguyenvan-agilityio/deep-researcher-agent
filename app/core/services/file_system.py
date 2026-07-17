@@ -8,6 +8,6 @@ def get_fs():
 
     if _fs is None:
         # _fs = MemoryFS()
-        _fs = OSFS("./tmp1", create=True)
+        _fs = OSFS("./tmp", create=True)
 
     return _fs

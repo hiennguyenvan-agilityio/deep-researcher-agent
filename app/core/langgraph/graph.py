@@ -31,14 +31,22 @@ def assign_workers(state: AgentState):
 
     pending_todos = [todo for todo in state["todos"] if todo["status"] == "pending"]
 
-    return [Send("searcher", task["content"]) for task in pending_todos]
+    return [
+        Send(
+            "searcher",
+            {
+                "task": task["content"],
+                "execution_id": state["execution_id"],
+            },
+        )
+        for task in pending_todos
+    ]
 
 
 async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder = StateGraph(
         AgentState,
         input_schema=MessagesState,
-        output_schema=MessagesState,
         context_schema=AgentContext,
     )
 

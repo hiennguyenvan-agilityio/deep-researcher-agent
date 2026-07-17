@@ -9,12 +9,13 @@ from ragas import Dataset, experiment
 from ragas.llms import llm_factory
 from ragas.metrics.collections import AnswerAccuracy, Faithfulness
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.types import Command
 
 from app.core.langgraph.graph import get_graph
 from app.core.services.file_system import get_fs
 from app.core.services.langfuse import get_instance
 from app.core.utils.llm import get_text_from_llm_response
-from app.schemas.graph import AgentContext
+
 
 load_dotenv()
 
@@ -53,14 +54,19 @@ async def run_experiment(row):
                 "callbacks": [langfuse_handler],
                 "configurable": {"thread_id": thread_id},
             }
-            run_id = str(uuid.uuid4())
 
             # Get the model's prediction
-            response = await deep_researcher_agent.ainvoke(
-                {"messages": [{"role": "user", "content": question}]},
+            await deep_researcher_agent.ainvoke(
+                {
+                    "messages": [{"role": "user", "content": question}],
+                },
                 config=config,
-                context=AgentContext(run_id=run_id),
             )
+            response = await deep_researcher_agent.ainvoke(
+                Command(resume=True),
+                config=config,
+            )
+
             prediction = get_text_from_llm_response(response["messages"][-1])
 
             # Calculate the correctness metric
@@ -71,7 +77,8 @@ async def run_experiment(row):
             )
 
             fs = get_fs()
-            research_node_path = f"{thread_id}/research_note_{run_id}.txt"
+            execution_id = response["execution_id"]
+            research_node_path = f"{thread_id}/research_note_{execution_id}.txt"
             # No context needed. Set faithfulness_score to 1.0
             faithfulness_score_value = 1.0
 
@@ -87,6 +94,7 @@ async def run_experiment(row):
 
             return {
                 "thread_id": thread_id,
+                "execution_id": execution_id,
                 "question": question,
                 "prediction": prediction,
                 "answer_accuracy": answer_accuracy_score.value,
