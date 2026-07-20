@@ -75,24 +75,6 @@ def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
     return {"messages": AIMessage(content=message), "action": action}
 
 
-async def request_confirmation(state: AgentState):
-    approved = interrupt(
-        {
-            "message": (
-                "Please help review your request before I begin.\n"
-                "\n"
-                f"{state['query']}\n"
-                "\n"
-                "Click Approve to continue or Cancel to make changes."
-            ),
-            "type": "approval",
-        }
-    )
-
-    if approved:
-        return Command(goto="orchestrator")
-
-
 async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     """Orchestrator that generates a plan for the researcher"""
 

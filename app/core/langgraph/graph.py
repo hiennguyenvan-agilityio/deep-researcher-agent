@@ -9,7 +9,6 @@ from app.core.langgraph.nodes import (
     gatekeeper,
     initial,
     orchestrator,
-    request_confirmation,
     searcher,
     synthesizer,
 )
@@ -62,7 +61,6 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder.add_node("orchestrator", orchestrator)
     deep_researcher_builder.add_node("searcher", searcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)
-    deep_researcher_builder.add_node("request_confirmation", request_confirmation)
     deep_researcher_builder.add_node("feedback", feedback)
 
     deep_researcher_builder.set_entry_point("initial")
@@ -70,7 +68,7 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder.add_conditional_edges(
         "gatekeeper",
         route,
-        {"refuse": END, "ask_user": END, "proceed": "request_confirmation"},
+        {"refuse": END, "ask_user": END, "proceed": "orchestrator"},
     )
     deep_researcher_builder.add_conditional_edges(
         "orchestrator",
