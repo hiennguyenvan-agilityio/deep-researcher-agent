@@ -8,6 +8,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END
 from langgraph.types import Command, interrupt
 from langgraph.runtime import Runtime
+from copilotkit.langgraph import copilotkit_customize_config
+from langchain_core.runnables import RunnableConfig
+from langchain_core.callbacks.manager import adispatch_custom_event
 
 from app.core.langgraph.tools.mcp import load_researcher_tools
 from app.core.langgraph.tools.research_note import write_research_notes
@@ -40,7 +43,9 @@ def initial(_: AgentState):
     }
 
 
-def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
+async def gatekeeper(
+    state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
+):
     """Perform safety/clarity/enhancement check and return structured decision."""
 
     context = runtime.context
@@ -57,8 +62,12 @@ def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
         ]
     )
 
+    modifiedConfig = copilotkit_customize_config(
+        emit_messages=False,
+    )
+
     chain = prompt | llm
-    response = chain.invoke(state)
+    response = await chain.ainvoke(state, config=modifiedConfig)
 
     action = response.get("action")
 
@@ -109,18 +118,25 @@ async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
         ]
     )
 
+    modifiedConfig = copilotkit_customize_config(
+        emit_messages=False, emit_tool_calls=False
+    )
+
     chain = prompt | llm
-    response = chain.invoke(
+    response = await chain.ainvoke(
         {
             "query": state["query"],
             "research_notes": research_notes,
-        }
+        },
+        config=modifiedConfig,
     )
 
     return {"orchestrator_messages": [response], "loop_count": loop_count}
 
 
-async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
+async def searcher(
+    state: SearchWorkerState, config: RunnableConfig, runtime: Runtime[AgentContext]
+):
     """Execute a single search task."""
     task = state["task"]
     execution_id = state["execution_id"]
@@ -141,8 +157,19 @@ async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
         state_schema=SearcherState,
     )
 
+    modifiedConfig = copilotkit_customize_config(
+        emit_messages=False, emit_tool_calls=False
+    )
+
     await search_agent.ainvoke(
-        {"messages": [("human", task)], "execution_id": execution_id}
+        {"messages": [("human", task)], "execution_id": execution_id},
+        config=modifiedConfig,
+    )
+
+    await adispatch_custom_event(
+        "manually_emit_message",
+        {"message": task, "message_id": str(uuid.uuid4()), "role": "activity"},
+        config=config,
     )
 
     return
