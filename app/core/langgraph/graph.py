@@ -5,14 +5,16 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.types import Checkpointer, Send
 
 from app.core.langgraph.nodes import (
+    feedback,
     gatekeeper,
+    initial,
     orchestrator,
     request_confirmation,
     searcher,
     synthesizer,
 )
 from app.core.langgraph.tools.todo import write_todos
-from app.schemas.graph import AgentContext, AgentState, GuardState
+from app.schemas.graph import AgentContext, AgentOutput, AgentState, GuardState
 
 
 def route(state: GuardState):
@@ -47,9 +49,11 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder = StateGraph(
         AgentState,
         input_schema=MessagesState,
+        output_schema=AgentOutput,
         context_schema=AgentContext,
     )
 
+    deep_researcher_builder.add_node("initial", initial)
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)
     tools_list = [write_todos]
     deep_researcher_builder.add_node(
@@ -59,8 +63,10 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder.add_node("searcher", searcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)
     deep_researcher_builder.add_node("request_confirmation", request_confirmation)
+    deep_researcher_builder.add_node("feedback", feedback)
 
-    deep_researcher_builder.set_entry_point("gatekeeper")
+    deep_researcher_builder.set_entry_point("initial")
+    deep_researcher_builder.add_edge("initial", "gatekeeper")
     deep_researcher_builder.add_conditional_edges(
         "gatekeeper",
         route,
@@ -73,7 +79,7 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
     )
     deep_researcher_builder.add_conditional_edges("tools", assign_workers, ["searcher"])
     deep_researcher_builder.add_edge("searcher", "orchestrator")
-    deep_researcher_builder.add_edge("synthesizer", END)
+    deep_researcher_builder.add_edge("synthesizer", "feedback")
 
     deep_researcher_agent = deep_researcher_builder.compile(checkpointer=checkpointer)
 

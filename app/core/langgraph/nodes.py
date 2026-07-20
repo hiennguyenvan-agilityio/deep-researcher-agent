@@ -3,8 +3,9 @@ import uuid
 
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
-from langchain.messages import AIMessage
+from langchain.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
+from langgraph.graph import END
 from langgraph.types import Command, interrupt
 from langgraph.runtime import Runtime
 
@@ -26,6 +27,17 @@ from app.schemas.graph import (
     SearcherState,
 )
 from app.core.constants.graph import initial_state
+
+
+def initial(_: AgentState):
+    # Automatic set execution_id each invoke run
+    execution_id = str(uuid.uuid4())
+
+    return {
+        # Reset state during each invoke, except resume
+        **initial_state,
+        "execution_id": execution_id,
+    }
 
 
 def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
@@ -52,13 +64,8 @@ def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
 
     if action == "proceed":
         query = response.get("query")
-        # Automatic set execution_id each invoke run
-        execution_id = str(uuid.uuid4())
 
         return {
-            # Reset state during each invoke, except resume
-            **initial_state,
-            "execution_id": execution_id,
             "query": query,
             "action": action,
         }
@@ -77,7 +84,8 @@ async def request_confirmation(state: AgentState):
                 f"{state['query']}\n"
                 "\n"
                 "Click Approve to continue or Cancel to make changes."
-            )
+            ),
+            "type": "approval",
         }
     )
 
@@ -88,7 +96,7 @@ async def request_confirmation(state: AgentState):
 async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     """Orchestrator that generates a plan for the researcher"""
 
-    loop_count = state.get("loop_count", -1) + 1
+    loop_count = state.get("loop_count", 0) + 1
 
     if loop_count > int(os.getenv("LOOP_LIMIT", 5)):
         return Command(goto="synthesizer")
@@ -192,3 +200,24 @@ def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
     )
 
     return {"messages": response}
+
+
+def feedback(_: AgentState):
+    feedback = interrupt(
+        {
+            "message": (
+                "Are you satisfied with that?\n"
+                "\n"
+                "If not, tell me what you'd like to improve or what additional research you'd like me to perform."
+            ),
+            "type": "feedback",
+        }
+    )
+
+    if feedback:
+        return Command(
+            goto="gatekeeper",
+            update={"messages": HumanMessage(feedback), "loop_count": 0},
+        )
+
+    return Command(goto=END)

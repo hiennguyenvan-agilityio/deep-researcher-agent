@@ -1,8 +1,9 @@
-from dataclasses import dataclass
+# from dataclasses import dataclass
 from typing import Annotated, Literal, Optional, TypedDict
 
 from langchain.messages import AnyMessage
 from langgraph.graph import MessagesState
+from pydantic import BaseModel
 
 from app.schemas.todo import Todo
 
@@ -12,6 +13,10 @@ class AgentState(MessagesState):
     todos: list[Todo]
     loop_count: int
     orchestrator_messages: list[AnyMessage]
+    execution_id: str
+
+
+class AgentOutput(MessagesState):
     execution_id: str
 
 
@@ -41,10 +46,15 @@ class GatekeeperOutput(TypedDict):
     ]
 
 
-@dataclass
-class AgentContext:
-    reason_model_name: Optional[str] = None
-    chat_model_name: Optional[str] = None
+# @dataclass
+# class AgentContext:
+#     reason_model_name: Optional[str] = None
+#     chat_model_name: Optional[str] = None
+
+
+class AgentContext(BaseModel):
+    reason_model_name: str | None = None
+    chat_model_name: str | None = None
 
 
 class SearchWorkerState(TypedDict):
