@@ -18,7 +18,7 @@ const InterruptControler = () => {
         return (
           <Feedback
             message={interrupt_message}
-            onSubmit={() => cancel()}
+            onSubmit={() => resolve(false)}
             onRevision={(feedback: string) => {
               resolve(feedback)
             }}
