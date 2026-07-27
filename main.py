@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI
@@ -5,11 +6,33 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import load_env_file
 from app.api.v1.main import api_router
-from app.api.copilotkit.main import lifespan
+from app.core.langgraph.graph import get_graph
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from app.api.copilotkit.main import init_copilotkit
+
 
 load_env_file()
 
-# app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    DB_URI = (
+        f"postgresql://"
+        f"{os.getenv('CHECKPOINTER_DB_USER')}:"
+        f"{os.getenv('CHECKPOINTER_DB_PASSWORD')}@"
+        f"{os.getenv('CHECKPOINTER_DB_HOST')}:"
+        f"{os.getenv('CHECKPOINTER_DB_PORT')}/"
+        f"{os.getenv('CHECKPOINTER_DB_NAME')}"
+    )
+
+    async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
+        app.state.graph = await get_graph(checkpointer=checkpointer)
+
+        init_copilotkit(app)
+
+        yield
+
+
 app = FastAPI(lifespan=lifespan)
 
 origins = ["*"]
