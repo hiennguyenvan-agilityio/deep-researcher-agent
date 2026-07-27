@@ -1,9 +1,9 @@
 # from dataclasses import dataclass
-from typing import Annotated, Literal, Optional, TypedDict
+from typing import Literal, Optional, TypedDict
 
 from langchain.messages import AnyMessage
 from langgraph.graph import MessagesState
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.todo import Todo
 
@@ -24,7 +24,7 @@ class GuardState(AgentState):
     action: Optional[Literal["refuse", "ask_user", "proceed"]]
 
 
-class GatekeeperOutput(TypedDict):
+class GatekeeperOutput(BaseModel):
     """Structured output from the gatekeeper node after safety check, clarity check, and query enhancement.
 
     This model captures the three possible outcomes:
@@ -33,23 +33,15 @@ class GatekeeperOutput(TypedDict):
     - proceed: the query is both safe and clear; a refined, enhanced query is provided for the planner.
     """
 
-    action: Annotated[
-        Literal["refuse", "ask_user", "proceed"],
-        "The decision after safety and clarity checks.",
-    ]
-    message: Annotated[
-        Optional[str],
-        "Refusal message, clarification questions or clarified query to show to the user, None if proceed.",
-    ]
-    query: Annotated[
-        Optional[str], "If proceed, the fully clarified query to pass to planner."
-    ]
-
-
-# @dataclass
-# class AgentContext:
-#     reason_model_name: Optional[str] = None
-#     chat_model_name: Optional[str] = None
+    action: Literal["refuse", "ask_user", "proceed"] = Field(
+        description="The decision after safety and clarity checks."
+    )
+    message: Optional[str] = Field(
+        description="Refusal message, clarification questions or clarified query to show to the user, None if proceed."
+    )
+    query: Optional[str] = Field(
+        description="If proceed, the fully clarified query to pass to planner."
+    )
 
 
 class AgentContext(BaseModel):

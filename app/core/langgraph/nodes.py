@@ -69,17 +69,17 @@ async def gatekeeper(
     chain = prompt | llm
     response = await chain.ainvoke(state, config=modifiedConfig)
 
-    action = response.get("action")
+    action = response.action
 
     if action == "proceed":
-        query = response.get("query")
+        query = response.query
 
         return {
             "query": query,
             "action": action,
         }
 
-    message = response.get("message")
+    message = response.message
 
     return {"messages": AIMessage(content=message), "action": action}
 

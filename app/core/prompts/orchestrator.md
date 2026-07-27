@@ -6,9 +6,9 @@ Analyze the current research notes and the user's request together, decide one o
 
 * If the notes are sufficient, output exactly:
   Make synthesis
-  (Do not call `write_todo`.)
+  (Do not call `write_todos`.)
 
-* Otherwise, call the `write_todo` tool to generate the search tasks.
+* Otherwise, call the `write_todos` tool to generate the search tasks.
 
 ## Current research notes
 {research_notes}
@@ -34,4 +34,4 @@ Assign `step` values to maximize parallelism.
 - Increase the `step` only when a task depends on the results of an earlier step.
 - Minimize the total number of execution steps by maximizing parallelism.
 
-Before calling `write_todo`, remove every task with `step > 1`.
+Before calling `write_todos`, remove every task with `step > 1`.
