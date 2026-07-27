@@ -63,7 +63,7 @@ async def run_experiment(row):
                 config=config,
             )
             response = await deep_researcher_agent.ainvoke(
-                Command(resume=True),
+                Command(resume=False),
                 config=config,
             )
 
