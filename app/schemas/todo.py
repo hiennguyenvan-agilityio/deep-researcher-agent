@@ -7,5 +7,5 @@ class Todo(TypedDict):
     content: str
     """The content/description of the todo item."""
 
-    status: Literal["pending", "completed"]
+    status: Literal["pending", "failed", "completed"]
     """The current status of the todo item."""

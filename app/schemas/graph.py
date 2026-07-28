@@ -1,18 +1,19 @@
 # from dataclasses import dataclass
-from typing import Literal, Optional, TypedDict
+from typing import Annotated, Literal, Optional, TypedDict
 
 from langchain.messages import AnyMessage
-from langgraph.graph import MessagesState
+from langgraph.graph import MessagesState, add_messages
 from pydantic import BaseModel, Field
 
+from app.core.utils.common import merge_todos
 from app.schemas.todo import Todo
 
 
 class AgentState(MessagesState):
     query: Optional[str]
-    todos: list[Todo]
+    todos: Annotated[list[Todo], merge_todos]
     loop_count: int
-    orchestrator_messages: list[AnyMessage]
+    orchestrator_messages: Annotated[list[AnyMessage], add_messages]
     execution_id: str
 
 
@@ -56,3 +57,14 @@ class SearchWorkerState(TypedDict):
 
 class SearcherState(MessagesState):
     execution_id: str
+
+
+class SearcherOutput(BaseModel):
+    status: Literal["failed", "completed"] = Field(
+        description=(
+            "'completed' only after successfully calling the "
+            "`write_research_notes` tool to save the research findings successfully. "
+            "Use 'failed' if the research task could not be completed or "
+            "the findings could not be saved."
+        )
+    )

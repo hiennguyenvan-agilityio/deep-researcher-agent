@@ -1,7 +1,10 @@
 import os
 from typing import Literal
+from dotenv import load_dotenv
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
+
+load_dotenv()
 
 SearchPlatform = Literal["tavily", "exa", "duckduckgo"]
 

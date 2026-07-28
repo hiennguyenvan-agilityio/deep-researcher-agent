@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 
@@ -27,9 +28,11 @@ from app.schemas.graph import (
     AgentState,
     GatekeeperOutput,
     SearchWorkerState,
+    SearcherOutput,
     SearcherState,
 )
 from app.core.constants.graph import initial_state
+from app.schemas.todo import Todo
 
 
 def initial(_: AgentState):
@@ -155,24 +158,30 @@ async def searcher(
         tools=tools,
         system_prompt=SEARCHER_PROMPT,
         state_schema=SearcherState,
+        response_format=SearcherOutput,
     )
 
     modifiedConfig = copilotkit_customize_config(
         emit_messages=False, emit_tool_calls=False
     )
 
-    await search_agent.ainvoke(
+    response = await search_agent.ainvoke(
         {"messages": [("human", task)], "execution_id": execution_id},
         config=modifiedConfig,
     )
 
-    await adispatch_custom_event(
-        "manually_emit_message",
-        {"message": task, "message_id": str(uuid.uuid4()), "role": "activity"},
-        config=config,
-    )
+    result = json.loads(response["messages"][-1].content)
 
-    return
+    status = result["status"]
+
+    if status == "completed":
+        await adispatch_custom_event(
+            "manually_emit_message",
+            {"message": task, "message_id": str(uuid.uuid4()), "role": "activity"},
+            config=config,
+        )
+
+    return {"todos": [Todo(content=task, status=status)]}
 
 
 def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
