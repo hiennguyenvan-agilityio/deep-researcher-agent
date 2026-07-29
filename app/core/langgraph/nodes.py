@@ -10,7 +10,6 @@ from langgraph.graph import END
 from langgraph.types import Command, interrupt
 from langgraph.runtime import Runtime
 from copilotkit.langgraph import copilotkit_customize_config
-from langchain_core.runnables import RunnableConfig
 from langchain_core.callbacks.manager import adispatch_custom_event
 
 from app.core.langgraph.tools.mcp import load_researcher_tools
@@ -35,7 +34,7 @@ from app.core.constants.graph import initial_state
 from app.schemas.todo import Todo
 
 
-def initial(_: AgentState):
+async def initial(_: AgentState):
     # Automatic set execution_id each invoke run
     execution_id = str(uuid.uuid4())
 
@@ -46,9 +45,7 @@ def initial(_: AgentState):
     }
 
 
-async def gatekeeper(
-    state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
-):
+async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
     """Perform safety/clarity/enhancement check and return structured decision."""
 
     context = runtime.context
@@ -90,15 +87,26 @@ async def gatekeeper(
 async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     """Orchestrator that generates a plan for the researcher"""
 
-    loop_count = state.get("loop_count", 0) + 1
-
-    if loop_count > int(os.getenv("LOOP_LIMIT", 5)):
-        return Command(goto="synthesizer")
-
     context = runtime.context
     model_name = getattr(context, "reason_model_name", None) or os.getenv(
         "REASON_MODEL_NAME"
     )
+    loop_count = state.get("loop_count", 0) + 1
+
+    if loop_count > int(os.getenv("LOOP_LIMIT", 5)):
+        # Workaround for a CopilotKit issue: `TEXT_MESSAGE_CONTENT` events
+        # cannot be sent unless a `TEXT_MESSAGE_START` event is sent first.
+        # This is a temporary hack; the root cause is still unknown.
+        modifiedConfig = copilotkit_customize_config(
+            emit_messages=False,
+            emit_tool_calls=False,
+        )
+        llm = init_chat_model(model=model_name)
+
+        response = llm.invoke("hello", config=modifiedConfig)
+
+        return {"orchestrator_messages": [AIMessage(content="Make synthesis")]}
+
     tools = [write_todos]
 
     llm = init_chat_model(model=model_name, temperature=0).bind_tools(tools)
@@ -137,9 +145,7 @@ async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     return {"orchestrator_messages": [response], "loop_count": loop_count}
 
 
-async def searcher(
-    state: SearchWorkerState, config: RunnableConfig, runtime: Runtime[AgentContext]
-):
+async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
     """Execute a single search task."""
     task = state["task"]
     execution_id = state["execution_id"]
@@ -175,16 +181,17 @@ async def searcher(
     status = result["status"]
 
     if status == "completed":
+        # `copilotkit_emit_message` uses an incorrect event name, causing it to fail.
+        # Manually dispatch the custom event as a workaround.
         await adispatch_custom_event(
             "manually_emit_message",
             {"message": task, "message_id": str(uuid.uuid4()), "role": "activity"},
-            config=config,
         )
 
     return {"todos": [Todo(content=task, status=status)]}
 
 
-def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
+async def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
     """Synthesis and generate the final response"""
     thread_id = runtime.execution_info.thread_id
     execution_id = state["execution_id"]
@@ -220,7 +227,7 @@ def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
     return {"messages": response}
 
 
-def feedback(_: AgentState):
+async def feedback(_: AgentState):
     feedback = interrupt(
         {
             "message": (

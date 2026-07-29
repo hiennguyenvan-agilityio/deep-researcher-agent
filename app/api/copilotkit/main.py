@@ -8,7 +8,7 @@ def init_copilotkit(app: FastAPI):
         app=app,
         agent=LangGraphAGUIAgent(
             name="Deep researcher",
-            description="An example agent.",
+            description="Deep researcher agent.",
             graph=app.state.graph,
         ),
         path="/copilotkit/deep_researcher",

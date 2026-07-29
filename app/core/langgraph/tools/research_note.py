@@ -13,14 +13,17 @@ def write_research_notes(
     tool_call_id: Annotated[str, InjectedToolCallId],
     runtime: ToolRuntime[AgentContext, SearcherState],
 ):
-    """Append a research note to a thread-specific file.
+    """Persist a research finding for the current research execution.
 
-    The note is saved to '{thread_id}/research_note_{execution_id}.txt' in the file system,
-    preceded by a dashed separator line. Use this to persistently store
-    observations, ideas, or collected data during a research workflow.
+    Use this tool to save relevant findings, observations, or useful information
+    discovered during the search task. The note is appended to a
+    thread-specific file at:
+        {thread_id}/research_note_{execution_id}.txt
+
+    Do not call this tool when the research task produces no relevant or useful information.
 
     Args:
-        note: The text content to write.
+        note: The research finding or information worth preserving.
     """
 
     thread_id = runtime.execution_info.thread_id
@@ -29,7 +32,7 @@ def write_research_notes(
     research_node_path = f"{thread_id}/research_note_{execution_id}.txt"
     fs = get_fs()
 
-    content = content = f"------------------\n{note}\n\n"
+    content = f"------------------\n{note}\n\n"
 
     fs.makedirs(thread_id, recreate=True)
     fs.appendtext(research_node_path, content)

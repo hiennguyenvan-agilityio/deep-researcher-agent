@@ -1,7 +1,8 @@
 from app.schemas.graph import AgentState
 
 initial_state: AgentState = {
-    "todos": [],
-    "loop_count": 0,
+    "query": None,  # Explicitly clear previous query state
+    "todos": [],  # Reset task list
+    "loop_count": 0,  # Reset loop limit counter
     "orchestrator_messages": [],
 }
