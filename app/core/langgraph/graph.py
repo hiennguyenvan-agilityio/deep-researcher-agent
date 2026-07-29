@@ -1,8 +1,10 @@
 from typing import Optional
+import uuid
 
 from langgraph.graph import END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.types import Checkpointer, Send
+from langchain_core.callbacks.manager import adispatch_custom_event
 
 from app.core.langgraph.nodes import (
     feedback,
@@ -16,19 +18,27 @@ from app.core.langgraph.tools.todo import write_todos
 from app.schemas.graph import AgentContext, AgentOutput, AgentState, GuardState
 
 
-def route(state: GuardState):
+async def route(state: GuardState):
     return state["action"]
 
 
-def orchestrator_tools_condition(state):
+async def orchestrator_tools_condition(state):
     return tools_condition(
         state,
         messages_key="orchestrator_messages",
     )
 
 
-def assign_workers(state: AgentState):
+async def assign_workers(state: AgentState):
     """Assign a worker to each task in todo list"""
+    await adispatch_custom_event(
+        "manually_emit_message",
+        {
+            "message": "Searching...",
+            "message_id": str(uuid.uuid4()),
+            "role": "activity",
+        },
+    )
 
     pending_todos = [todo for todo in state["todos"] if todo["status"] == "pending"]
 
