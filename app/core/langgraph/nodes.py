@@ -9,8 +9,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END
 from langgraph.types import Command, interrupt
 from langgraph.runtime import Runtime
-from copilotkit.langgraph import copilotkit_customize_config
 from langchain_core.callbacks.manager import adispatch_custom_event
+from langchain_core.runnables import RunnableConfig
 
 from app.core.langgraph.tools.mcp import load_researcher_tools
 from app.core.langgraph.tools.research_note import write_research_notes
@@ -22,6 +22,7 @@ from app.core.prompts import (
     SYNTHESIS_PROMPT,
 )
 from app.core.services.file_system import get_fs
+from app.core.utils.nodes import get_node_config
 from app.schemas.graph import (
     AgentContext,
     AgentState,
@@ -45,7 +46,9 @@ async def initial(_: AgentState):
     }
 
 
-async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
+async def gatekeeper(
+    state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
+):
     """Perform safety/clarity/enhancement check and return structured decision."""
 
     context = runtime.context
@@ -62,9 +65,7 @@ async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
         ]
     )
 
-    modifiedConfig = copilotkit_customize_config(
-        emit_messages=False,
-    )
+    modifiedConfig = get_node_config(config, emit_messages=False, emit_tool_calls=False)
 
     chain = prompt | llm
     response = await chain.ainvoke(state, config=modifiedConfig)
@@ -84,7 +85,9 @@ async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
     return {"messages": AIMessage(content=message), "action": action}
 
 
-async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
+async def orchestrator(
+    state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
+):
     """Orchestrator that generates a plan for the researcher"""
 
     context = runtime.context
@@ -94,17 +97,6 @@ async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     loop_count = state.get("loop_count", 0) + 1
 
     if loop_count > int(os.getenv("LOOP_LIMIT", 5)):
-        # Workaround for a CopilotKit issue: `TEXT_MESSAGE_CONTENT` events
-        # cannot be sent unless a `TEXT_MESSAGE_START` event is sent first.
-        # This is a temporary hack; the root cause is still unknown.
-        modifiedConfig = copilotkit_customize_config(
-            emit_messages=False,
-            emit_tool_calls=False,
-        )
-        llm = init_chat_model(model=model_name)
-
-        response = llm.invoke("hello", config=modifiedConfig)
-
         return {"orchestrator_messages": [AIMessage(content="Make synthesis")]}
 
     tools = [write_todos]
@@ -129,9 +121,7 @@ async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
         ]
     )
 
-    modifiedConfig = copilotkit_customize_config(
-        emit_messages=False, emit_tool_calls=False
-    )
+    modifiedConfig = get_node_config(config, emit_messages=False, emit_tool_calls=False)
 
     chain = prompt | llm
     response = await chain.ainvoke(
@@ -145,7 +135,9 @@ async def orchestrator(state: AgentState, runtime: Runtime[AgentContext]):
     return {"orchestrator_messages": [response], "loop_count": loop_count}
 
 
-async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
+async def searcher(
+    state: SearchWorkerState, config: RunnableConfig, runtime: Runtime[AgentContext]
+):
     """Execute a single search task."""
     task = state["task"]
     execution_id = state["execution_id"]
@@ -167,9 +159,7 @@ async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
         response_format=SearcherOutput,
     )
 
-    modifiedConfig = copilotkit_customize_config(
-        emit_messages=False, emit_tool_calls=False
-    )
+    modifiedConfig = get_node_config(config, emit_messages=False, emit_tool_calls=False)
 
     response = await search_agent.ainvoke(
         {"messages": [("human", task)], "execution_id": execution_id},
@@ -191,7 +181,9 @@ async def searcher(state: SearchWorkerState, runtime: Runtime[AgentContext]):
     return {"todos": [Todo(content=task, status=status)]}
 
 
-async def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
+async def synthesizer(
+    state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
+):
     """Synthesis and generate the final response"""
     thread_id = runtime.execution_info.thread_id
     execution_id = state["execution_id"]
@@ -218,10 +210,13 @@ async def synthesizer(state: AgentState, runtime: Runtime[AgentContext]):
         ]
     )
 
+    modifiedConfig = get_node_config(config, emit_messages=True, emit_tool_calls=False)
+
     chain = prompt | llm
 
     response = chain.invoke(
-        {"messages": state["messages"], "research_note": research_notes}
+        {"messages": state["messages"], "research_note": research_notes},
+        config=modifiedConfig,
     )
 
     return {"messages": response}
