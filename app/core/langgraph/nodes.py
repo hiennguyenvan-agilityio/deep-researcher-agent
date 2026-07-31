@@ -214,7 +214,7 @@ async def synthesizer(
 
     chain = prompt | llm
 
-    response = chain.invoke(
+    response = await chain.ainvoke(
         {"messages": state["messages"], "research_note": research_notes},
         config=modifiedConfig,
     )
