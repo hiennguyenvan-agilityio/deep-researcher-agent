@@ -22,7 +22,7 @@ async def apply_guardrail(
         bool: True if the guardrail intervened, False otherwise.
     """
 
-    content = [{"text": {"text": text}}]
+    content = [{"text": {"text": text[:10_000]}}]
     GID = os.environ.get("BEDROCK_GUARDRAIL_ID")
     GVER = os.environ.get("BEDROCK_GUARDRAIL_VERSION")
 
@@ -36,19 +36,14 @@ async def apply_guardrail(
             }
         )
 
-    print("here")
-
     async with aws_session.client(
         "bedrock-runtime", region_name=REGION
     ) as bedrock_client:
-        print("here1")
         response = await bedrock_client.apply_guardrail(
             guardrailIdentifier=GID,
             guardrailVersion=GVER,
             source=source,
             content=content,
         )
-
-        print("bedrock response", response)
 
         return response["action"] == "GUARDRAIL_INTERVENED"

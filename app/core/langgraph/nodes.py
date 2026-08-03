@@ -106,7 +106,9 @@ async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
         )
 
     # Guardrail check
-    if await apply_guardrail(last_message, "INPUT"):
+    if os.getenv("BEDROCK_GUARDRAIL_ID") and await apply_guardrail(
+        last_message, "INPUT"
+    ):
         response = await llm.ainvoke(REFUSE_PROMPT)
 
         return Command(
@@ -120,7 +122,6 @@ async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
     sanitized_messages = {}
 
     if sanitized_message != last_message:
-        print("Sanitized message:", sanitized_message)
         sanitized_messages[index] = HumanMessage(content=sanitized_message)
 
     return Command(
