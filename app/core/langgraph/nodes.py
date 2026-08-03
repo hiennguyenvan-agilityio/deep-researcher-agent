@@ -30,8 +30,10 @@ from app.core.prompts import (
     SEARCHER_PROMPT,
     SYNTHESIS_PROMPT,
 )
+from app.core.services.aws import apply_guardrail
 from app.core.services.file_system import get_fs
 from app.core.utils.common import replace_at_indices
+from app.core.utils.llm import get_last_message_content
 from app.core.utils.nodes import get_node_config
 from app.schemas.graph import (
     AgentContext,
@@ -55,9 +57,7 @@ async def initial(_: AgentState):
     }
 
 
-async def gatekeeper(
-    state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
-):
+async def gatekeeper(state: AgentState, runtime: Runtime[AgentContext]):
     """Perform safety/clarity/enhancement check and return structured decision."""
     context = runtime.context
     token_limit = getattr(context, "token_limit", None) or os.getenv(
@@ -71,12 +71,15 @@ async def gatekeeper(
         InvisibleText(),
     ]
 
-    last_message = state["messages"][-1]
+    last_message = get_last_message_content(state["messages"])
     index = len(state["messages"]) - 1
 
-    sanitized_message, results_valid, _ = scan_prompt(
-        input_scanners, last_message.content
+    reason_model_name = getattr(context, "chat_model_name", None) or os.getenv(
+        "CHAT_MODEL_NAME"
     )
+    llm = init_chat_model(reason_model_name)
+
+    sanitized_message, results_valid, _ = scan_prompt(input_scanners, last_message)
 
     should_refuse = not all(
         (
@@ -87,11 +90,6 @@ async def gatekeeper(
     )
 
     if should_refuse:
-        reason_model_name = getattr(context, "chat_model_name", None) or os.getenv(
-            "CHAT_MODEL_NAME"
-        )
-        llm = init_chat_model(reason_model_name)
-
         prompt = REFUSE_PROMPT
 
         if not results_valid["TokenLimit"]:
@@ -107,9 +105,21 @@ async def gatekeeper(
             },
         )
 
+    # Guardrail check
+    if await apply_guardrail(last_message, "INPUT"):
+        response = await llm.ainvoke(REFUSE_PROMPT)
+
+        return Command(
+            goto=END,
+            update={
+                "messages": response,
+                "sanitized_messages": {index: HumanMessage(content="")},
+            },
+        )
+
     sanitized_messages = {}
 
-    if sanitized_message != last_message.content:
+    if sanitized_message != last_message:
         print("Sanitized message:", sanitized_message)
         sanitized_messages[index] = HumanMessage(content=sanitized_message)
 

@@ -60,11 +60,11 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
 
     deep_researcher_builder.add_node("initial", initial)
     deep_researcher_builder.add_node("gatekeeper", gatekeeper)
+    deep_researcher_builder.add_node("orchestrator", orchestrator)
     tools_list = [write_todos]
     deep_researcher_builder.add_node(
         "tools", ToolNode(tools_list, messages_key="orchestrator_messages")
     )
-    deep_researcher_builder.add_node("orchestrator", orchestrator)
     deep_researcher_builder.add_node("searcher", searcher)
     deep_researcher_builder.add_node("synthesizer", synthesizer)
     deep_researcher_builder.add_node("feedback", feedback)

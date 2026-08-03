@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "ag-ui-langgraph>=0.0.42",
+    "aioboto3>=15.5.0",
     "copilotkit>=0.1.94",
     "ddgs>=9.14.4",
     "dotenv>=0.9.9",
