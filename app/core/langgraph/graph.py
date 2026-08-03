@@ -15,11 +15,7 @@ from app.core.langgraph.nodes import (
     synthesizer,
 )
 from app.core.langgraph.tools.todo import write_todos
-from app.schemas.graph import AgentContext, AgentOutput, AgentState, GuardState
-
-
-async def route(state: GuardState):
-    return state["action"]
+from app.schemas.graph import AgentContext, AgentOutput, AgentState
 
 
 async def orchestrator_tools_condition(state):
@@ -75,11 +71,7 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
 
     deep_researcher_builder.set_entry_point("initial")
     deep_researcher_builder.add_edge("initial", "gatekeeper")
-    deep_researcher_builder.add_conditional_edges(
-        "gatekeeper",
-        route,
-        {"refuse": END, "ask_user": END, "proceed": "orchestrator"},
-    )
+
     deep_researcher_builder.add_conditional_edges(
         "orchestrator",
         orchestrator_tools_condition,

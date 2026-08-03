@@ -12,21 +12,30 @@ from langgraph.runtime import Runtime
 from langchain_core.callbacks.manager import adispatch_custom_event
 from langchain_core.runnables import RunnableConfig
 
+from llm_guard import scan_prompt
+from llm_guard.input_scanners import (
+    PromptInjection,
+    TokenLimit,
+    Toxicity,
+    InvisibleText,
+)
+
 from app.core.langgraph.tools.mcp import load_researcher_tools
 from app.core.langgraph.tools.research_note import write_research_notes
 from app.core.langgraph.tools.todo import write_todos
 from app.core.prompts import (
-    GATEKEEPER_PROMPT,
     ORCHESTRATOR_PROMPT,
+    REFUSE_PROMPT,
+    REQUEST_TOO_LONG_SUB_PROMPT,
     SEARCHER_PROMPT,
     SYNTHESIS_PROMPT,
 )
 from app.core.services.file_system import get_fs
+from app.core.utils.common import replace_at_indices
 from app.core.utils.nodes import get_node_config
 from app.schemas.graph import (
     AgentContext,
     AgentState,
-    GatekeeperOutput,
     SearchWorkerState,
     SearcherOutput,
     SearcherState,
@@ -50,39 +59,64 @@ async def gatekeeper(
     state: AgentState, config: RunnableConfig, runtime: Runtime[AgentContext]
 ):
     """Perform safety/clarity/enhancement check and return structured decision."""
-
     context = runtime.context
-    reason_model_name = getattr(context, "reason_model_name", None) or os.getenv(
-        "REASON_MODEL_NAME"
+    token_limit = getattr(context, "token_limit", None) or os.getenv(
+        "TOKEN_LIMIT", 4096
     )
 
-    llm = init_chat_model(reason_model_name).with_structured_output(GatekeeperOutput)
+    input_scanners = [
+        TokenLimit(limit=token_limit),
+        PromptInjection(),
+        Toxicity(),
+        InvisibleText(),
+    ]
 
-    prompt = ChatPromptTemplate(
-        [
-            ("system", GATEKEEPER_PROMPT),
-            ("placeholder", "{messages}"),
-        ]
+    last_message = state["messages"][-1]
+    index = len(state["messages"]) - 1
+
+    sanitized_message, results_valid, _ = scan_prompt(
+        input_scanners, last_message.content
     )
 
-    modifiedConfig = get_node_config(config, emit_messages=False, emit_tool_calls=False)
+    should_refuse = not all(
+        (
+            results_valid["TokenLimit"],
+            results_valid["PromptInjection"],
+            results_valid["Toxicity"],
+        )
+    )
 
-    chain = prompt | llm
-    response = await chain.ainvoke(state, config=modifiedConfig)
+    if should_refuse:
+        reason_model_name = getattr(context, "chat_model_name", None) or os.getenv(
+            "CHAT_MODEL_NAME"
+        )
+        llm = init_chat_model(reason_model_name)
 
-    action = response.action
+        prompt = REFUSE_PROMPT
 
-    if action == "proceed":
-        query = response.query
+        if not results_valid["TokenLimit"]:
+            prompt += REQUEST_TOO_LONG_SUB_PROMPT
 
-        return {
-            "query": query,
-            "action": action,
-        }
+        response = await llm.ainvoke(prompt)
 
-    message = response.message
+        return Command(
+            goto=END,
+            update={
+                "messages": response,
+                "sanitized_messages": {index: HumanMessage(content="")},
+            },
+        )
 
-    return {"messages": AIMessage(content=message), "action": action}
+    sanitized_messages = {}
+
+    if sanitized_message != last_message.content:
+        print("Sanitized message:", sanitized_message)
+        sanitized_messages[index] = HumanMessage(content=sanitized_message)
+
+    return Command(
+        goto="orchestrator",
+        update={"sanitized_messages": sanitized_messages},
+    )
 
 
 async def orchestrator(
@@ -117,16 +151,18 @@ async def orchestrator(
     prompt = ChatPromptTemplate(
         [
             ("system", ORCHESTRATOR_PROMPT),
-            ("human", "{query}"),
+            ("placeholder", "{messages}"),
         ]
     )
+
+    messages = replace_at_indices(state["messages"], state.get("sanitized_messages"))
 
     modifiedConfig = get_node_config(config, emit_messages=False, emit_tool_calls=False)
 
     chain = prompt | llm
     response = await chain.ainvoke(
         {
-            "query": state["query"],
+            "messages": messages,
             "research_notes": research_notes,
         },
         config=modifiedConfig,
@@ -143,7 +179,7 @@ async def searcher(
     execution_id = state["execution_id"]
 
     context = runtime.context
-    model_name = getattr(context, "reason_model_name", None) or os.getenv(
+    model_name = getattr(context, "chat_model_name", None) or os.getenv(
         "CHAT_MODEL_NAME"
     )
     search_platform = os.getenv("SEARCH_PLATFORM", "exa")
