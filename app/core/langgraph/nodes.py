@@ -32,6 +32,7 @@ from app.core.prompts import (
 )
 from app.core.services.aws import apply_guardrail
 from app.core.services.file_system import get_fs
+from app.core.services.opa import get_opa_data
 from app.core.utils.common import replace_at_indices
 from app.core.utils.llm import get_last_message_content
 from app.core.utils.nodes import get_node_config
@@ -193,9 +194,23 @@ async def searcher(
     model_name = getattr(context, "chat_model_name", None) or os.getenv(
         "CHAT_MODEL_NAME"
     )
-    search_platform = os.getenv("SEARCH_PLATFORM", "exa")
+    user = context.user
+    opa_input = {
+        "user": {
+            "id": user.id,
+            "email": user.email,
+        }
+        if user
+        else None
+    }
 
-    tools = await load_researcher_tools(search_platform=search_platform)
+    data = await get_opa_data(
+        "deep_researcher/search_platform",
+        opa_input,
+        default={"search_platform": "duckduckgo"},
+    )
+
+    tools = await load_researcher_tools(search_platform=data.get("search_platform"))
     tools.append(write_research_notes)
 
     search_agent = create_agent(

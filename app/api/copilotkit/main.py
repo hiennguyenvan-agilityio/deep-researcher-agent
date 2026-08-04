@@ -1,15 +1,40 @@
-from ag_ui_langgraph import add_langgraph_fastapi_endpoint
+from ag_ui.core.types import RunAgentInput
+from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
+
+from app.core.services.auth import get_user
 
 
 def init_copilotkit(app: FastAPI):
-    add_langgraph_fastapi_endpoint(
-        app=app,
-        agent=LangGraphAGUIAgent(
-            name="Deep researcher",
-            description="Deep researcher agent.",
-            graph=app.state.graph,
-        ),
-        path="/copilotkit/deep_researcher",
+    agent = LangGraphAGUIAgent(
+        name="deep_researcher",
+        description="Deep researcher agent.",
+        graph=app.state.graph,
     )
+
+    @app.post("/copilotkit/agent/deep_researcher")
+    async def deep_researcher_endpoint(input_data: RunAgentInput, request: Request):
+        token = input_data.forwarded_props.get("Authorization")
+
+        user = await get_user(token)
+        # Clone so each request gets isolated state (see LangGraphAgent.clone).
+        request_agent = agent.clone()
+        request_agent.config = {
+            **request_agent.config,
+            "configurable": {
+                **request_agent.config.get("configurable", {}),
+                "user": user,
+            },
+        }
+
+        encoder = EventEncoder(accept=request.headers.get("accept"))
+
+        async def event_generator():
+            async for event in request_agent.run(input_data):
+                yield encoder.encode(event)
+
+        return StreamingResponse(
+            event_generator(), media_type=encoder.get_content_type()
+        )

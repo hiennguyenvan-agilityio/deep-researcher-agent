@@ -5,6 +5,7 @@ from typing import Annotated, Literal, TypedDict
 from langchain.messages import AnyMessage
 from langgraph.graph import MessagesState, add_messages
 from pydantic import BaseModel, Field
+from supabase_auth import User
 
 from app.core.utils.common import merge_todos
 from app.schemas.todo import Todo
@@ -26,6 +27,7 @@ class AgentContext(BaseModel):
     reason_model_name: str | None = None
     chat_model_name: str | None = None
     token_limit: int | None = None
+    user: User | None = None
 
 
 class SearchWorkerState(TypedDict):
