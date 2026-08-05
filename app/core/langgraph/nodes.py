@@ -32,7 +32,7 @@ from app.core.prompts import (
 )
 from app.core.services.aws import apply_guardrail
 from app.core.services.file_system import get_fs
-from app.core.services.opa import get_opa_data
+from app.core.services.opa import opa_check
 from app.core.utils.common import replace_at_indices
 from app.core.utils.llm import get_last_message_content
 from app.core.utils.nodes import get_node_config
@@ -204,10 +204,10 @@ async def searcher(
         else None
     }
 
-    data = await get_opa_data(
-        "deep_researcher/search_platform",
+    _, data = await opa_check(
+        "deep_researcher/search",
         opa_input,
-        default={"search_platform": "duckduckgo"},
+        default={"allow": True, "search_platform": "duckduckgo"},
     )
 
     tools = await load_researcher_tools(search_platform=data.get("search_platform"))
