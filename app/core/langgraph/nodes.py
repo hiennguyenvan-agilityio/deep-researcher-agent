@@ -3,7 +3,7 @@ import uuid
 
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
-from langchain.messages import AIMessage, HumanMessage
+from langchain.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END
 from langgraph.types import Command, interrupt
@@ -143,7 +143,7 @@ async def orchestrator(
     loop_count = state.get("loop_count", 0) + 1
 
     if loop_count > int(os.getenv("LOOP_LIMIT", 5)):
-        return {"orchestrator_messages": [AIMessage(content="Make synthesis")]}
+        return
 
     tools = [write_todos]
 
