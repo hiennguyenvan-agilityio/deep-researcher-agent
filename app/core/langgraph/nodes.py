@@ -1,4 +1,3 @@
-import json
 import os
 import uuid
 
@@ -234,9 +233,20 @@ async def searcher(
         config=modifiedConfig,
     )
 
-    result = json.loads(response["messages"][-1].content)
+    structured_response = response.get("structured_response")
 
-    status = result["status"]
+    if structured_response is None:
+        # Gemini + tools doesn't support provider-native structured output
+        # (langchain forces ToolStrategy), and this model answers with the
+        # schema as plain JSON text instead of a structured tool call.
+        try:
+            structured_response = SearcherOutput.model_validate_json(
+                response["messages"][-1].content
+            )
+        except ValueError:
+            structured_response = None
+
+    status = structured_response.status if structured_response else "failed"
 
     if status == "completed":
         # `copilotkit_emit_message` uses an incorrect event name, causing it to fail.
