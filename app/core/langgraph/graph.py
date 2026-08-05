@@ -1,10 +1,8 @@
 from typing import Optional
-import uuid
 
 from langgraph.graph import END, MessagesState, StateGraph
-from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.types import Checkpointer, Send
-from langchain_core.callbacks.manager import adispatch_custom_event
+from langgraph.prebuilt import ToolNode
+from langgraph.types import Checkpointer
 
 from app.core.langgraph.nodes import (
     feedback,
@@ -14,40 +12,12 @@ from app.core.langgraph.nodes import (
     searcher,
     synthesizer,
 )
+from app.core.langgraph.routing import (
+    assign_workers,
+    orchestrator_tools_condition,
+)
 from app.core.langgraph.tools.todo import write_todos
 from app.schemas.graph import AgentContext, AgentOutput, AgentState
-
-
-async def orchestrator_tools_condition(state):
-    return tools_condition(
-        state,
-        messages_key="orchestrator_messages",
-    )
-
-
-async def assign_workers(state: AgentState):
-    """Assign a worker to each task in todo list"""
-    await adispatch_custom_event(
-        "manually_emit_message",
-        {
-            "message": "Searching...",
-            "message_id": str(uuid.uuid4()),
-            "role": "activity",
-        },
-    )
-
-    pending_todos = [todo for todo in state["todos"] if todo["status"] == "pending"]
-
-    return [
-        Send(
-            "searcher",
-            {
-                "task": task["content"],
-                "execution_id": state["execution_id"],
-            },
-        )
-        for task in pending_todos
-    ]
 
 
 async def get_graph(checkpointer: Optional[Checkpointer] = None):
