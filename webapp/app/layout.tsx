@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { CopilotKit } from "@copilotkit/react-core/v2"; 
-import "@copilotkit/react-core/v2/styles.css"; 
+import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
+import { AuthProvider } from "@/app/components/AuthProvider";
+import { CopilotProvider } from "@/app/components/CopilotProvider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,20 +14,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // TODO: Implement optional signin feature. Split CopilotKit to component to avoid re-render layout
-  const userToken = "Bearer <auth access token>";
-
   return (
     <html lang="en" className="h-full">
       <body className="h-full">
-        <CopilotKit
-          runtimeUrl="/api/copilotkit"
-          properties={{
-            Authorization: userToken,
-          }}
-        >
-          {children}
-        </CopilotKit>
+        <AuthProvider>
+          <CopilotProvider>{children}</CopilotProvider>
+        </AuthProvider>
       </body>
     </html>
   );
