@@ -13,10 +13,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // TODO: Implement optional signin feature. Split CopilotKit to component to avoid re-render layout
+  const userToken = "Bearer <auth access token>";
+
   return (
     <html lang="en" className="h-full">
       <body className="h-full">
-        <CopilotKit runtimeUrl="/api/copilotkit">
+        <CopilotKit
+          runtimeUrl="/api/copilotkit"
+          properties={{
+            Authorization: userToken,
+          }}
+        >
           {children}
         </CopilotKit>
       </body>
