@@ -86,7 +86,7 @@ uv run main.py
 Mkae sure you have install OPA. Reference [the document](https://www.openpolicyagent.org/docs?current-os=linux#install-and-run-opa)
 
 ```bash
-./opa run --server --addr :8181 ./policies/search_platform.rego
+./opa run --server --addr :8181 ./policies/search.rego
 ```
 
 #### Start the FastAPI Server
