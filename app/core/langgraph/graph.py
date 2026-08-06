@@ -3,6 +3,7 @@ from typing import Optional
 from langgraph.graph import END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Checkpointer
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.core.langgraph.nodes import (
     feedback,
@@ -50,6 +51,8 @@ async def get_graph(checkpointer: Optional[Checkpointer] = None):
     deep_researcher_builder.add_conditional_edges("tools", assign_workers, ["searcher"])
     deep_researcher_builder.add_edge("searcher", "orchestrator")
     deep_researcher_builder.add_edge("synthesizer", "feedback")
+
+    checkpointer = checkpointer or InMemorySaver()
 
     deep_researcher_agent = deep_researcher_builder.compile(checkpointer=checkpointer)
 
