@@ -1,6 +1,6 @@
 from supabase_auth import User
 
-from app.core.services.supabase import supabase_client
+from app.core.services.supabase import get_instance as get_supabase_client
 from app.core.services.logger import logger
 
 
@@ -11,6 +11,8 @@ async def get_user(token: str | None) -> User | None:
     token = token.replace("Bearer ", "")
 
     try:
+        supabase_client = get_supabase_client()
+
         response = supabase_client.auth.get_user(token)
 
         return response.user

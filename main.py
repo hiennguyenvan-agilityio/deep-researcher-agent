@@ -8,7 +8,6 @@ from app.core.config import load_env_file
 from app.api.v1.main import api_router
 from app.core.langgraph.graph import get_graph
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from app.api.copilotkit.main import init_copilotkit
 
 
 load_env_file()
@@ -27,8 +26,6 @@ async def lifespan(app: FastAPI):
 
     async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
         app.state.graph = await get_graph(checkpointer=checkpointer)
-
-        init_copilotkit(app)
 
         yield
 
