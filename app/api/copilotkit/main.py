@@ -1,3 +1,6 @@
+import logging
+
+from ag_ui.core.events import RunErrorEvent
 from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
@@ -5,6 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 
 from app.core.services.auth import get_user
+
+logger = logging.getLogger(__name__)
 
 
 def init_copilotkit(app: FastAPI):
@@ -32,8 +37,16 @@ def init_copilotkit(app: FastAPI):
         encoder = EventEncoder(accept=request.headers.get("accept"))
 
         async def event_generator():
-            async for event in request_agent.run(input_data):
-                yield encoder.encode(event)
+            try:
+                async for event in request_agent.run(input_data):
+                    yield encoder.encode(event)
+            except Exception:
+                logger.exception("Graph run failed for thread %s", input_data.thread_id)
+                yield encoder.encode(
+                    RunErrorEvent(
+                        message="Sorry, something went wrong on our end. Please try again in a moment."
+                    )
+                )
 
         return StreamingResponse(
             event_generator(), media_type=encoder.get_content_type()

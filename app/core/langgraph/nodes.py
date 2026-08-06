@@ -46,7 +46,6 @@ from app.schemas.graph import (
 )
 from app.core.constants.graph import INITIAL_STATE
 from app.schemas.todo import Todo
-from app.core.services.logger import logger
 
 
 async def initial(_: AgentState):
@@ -208,15 +207,12 @@ async def searcher(
 
     search_platform = None
 
-    try:
-        _, data = await opa_check(
-            "deep_researcher/search",
-            opa_input,
-        )
+    _, data = await opa_check(
+        "deep_researcher/search",
+        opa_input,
+    )
 
-        search_platform = data.get("search_platform")
-    except Exception:
-        logger.exception("Fail to fetch search policy")
+    search_platform = data.get("search_platform")
 
     tools = await load_researcher_tools(
         search_platform=search_platform or DEFAULT_SEARCH_PLATFORM
