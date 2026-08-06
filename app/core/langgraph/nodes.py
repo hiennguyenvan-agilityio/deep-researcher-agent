@@ -310,22 +310,35 @@ async def synthesizer(
     return {"messages": response}
 
 
-async def feedback(_: AgentState):
-    feedback = interrupt(
-        {
-            "message": (
-                "Are you satisfied with that?\n"
-                "\n"
-                "If not, tell me what you'd like to improve or what additional research you'd like me to perform."
-            ),
-            "type": "feedback",
+async def feedback(_: AgentState, runtime: Runtime[AgentContext]):
+    user = runtime.context.user
+    opa_input = {
+        "user": {
+            "id": user.id,
+            "email": user.email,
         }
-    )
+        if user
+        else None
+    }
 
-    if feedback:
-        return Command(
-            goto="gatekeeper",
-            update={"messages": HumanMessage(feedback), "loop_count": 0},
+    allow, _ = await opa_check("deep_researcher/feedback", opa_input)
+
+    if allow:
+        feedback = interrupt(
+            {
+                "message": (
+                    "Are you satisfied with that?\n"
+                    "\n"
+                    "If not, tell me what you'd like to improve or what additional research you'd like me to perform."
+                ),
+                "type": "feedback",
+            }
         )
+
+        if feedback:
+            return Command(
+                goto="gatekeeper",
+                update={"messages": HumanMessage(feedback), "loop_count": 0},
+            )
 
     return Command(goto=END)
