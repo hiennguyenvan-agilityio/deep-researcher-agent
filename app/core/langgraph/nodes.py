@@ -46,6 +46,8 @@ from app.schemas.graph import (
 from app.core.constants.graph import INITIAL_STATE
 from app.schemas.todo import Todo
 
+_search_agent_cache = {}
+
 
 async def initial(_: AgentState):
     # Automatic set execution_id each invoke run
@@ -204,27 +206,35 @@ async def searcher(
         else None
     }
 
-    search_platform = None
-
     _, data = await opa_check(
         "deep_researcher/search",
         opa_input,
     )
 
-    search_platform = data.get("search_platform")
+    search_platform = data.get("search_platform") or DEFAULT_SEARCH_PLATFORM
 
     tools = await load_researcher_tools(
-        search_platform=search_platform or DEFAULT_SEARCH_PLATFORM
+        search_platform=search_platform
     )
     tools.append(write_research_notes)
 
-    search_agent = create_agent(
-        model_name,
-        tools=tools,
-        system_prompt=SEARCHER_PROMPT,
-        state_schema=SearcherState,
-        response_format=SearcherOutput,
-    )
+    agent_cache_key = (model_name, search_platform)
+    search_agent = _search_agent_cache.get(agent_cache_key)
+
+    if search_agent is None:
+        tools = [
+            *await load_researcher_tools(search_platform=search_platform),
+            write_research_notes,
+        ]
+
+        search_agent = create_agent(
+            model_name,
+            tools=tools,
+            system_prompt=SEARCHER_PROMPT,
+            state_schema=SearcherState,
+            response_format=SearcherOutput,
+        )
+        _search_agent_cache[agent_cache_key] = search_agent
 
     modifiedConfig = get_node_config(config, emit_messages=False, emit_tool_calls=False)
 

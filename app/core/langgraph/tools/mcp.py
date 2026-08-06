@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Literal
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ load_dotenv()
 SearchPlatform = Literal["tavily", "exa", "duckduckgo"]
 
 _tool_cache: dict[SearchPlatform, list] = {}
+_tool_cache_lock = asyncio.Lock()
 
 client = MultiServerMCPClient(
     {
@@ -31,12 +33,18 @@ async def load_researcher_tools(
     if not force and (cached := _tool_cache.get(search_platform)):
         return cached
 
-    filtered_tools = [
-        tool
-        for tool in await client.get_tools()
-        if search_platform in get_tool_tags(tool)
-    ]
+    async with _tool_cache_lock:
+        # Re-check: a concurrent Send-dispatched searcher may have
+        # populated the cache while we were waiting on the lock.
+        if not force and (cached := _tool_cache.get(search_platform)):
+            return cached
 
-    _tool_cache[search_platform] = filtered_tools
+        filtered_tools = [
+            tool
+            for tool in await client.get_tools()
+            if search_platform in get_tool_tags(tool)
+        ]
 
-    return filtered_tools
+        _tool_cache[search_platform] = filtered_tools
+
+        return filtered_tools
