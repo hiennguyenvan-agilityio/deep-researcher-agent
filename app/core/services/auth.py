@@ -1,7 +1,7 @@
-from fastapi import logger
 from supabase_auth import User
 
 from app.core.services.supabase import supabase_client
+from app.core.services.logger import logger
 
 
 async def get_user(token: str | None) -> User | None:

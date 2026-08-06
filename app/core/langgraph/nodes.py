@@ -20,6 +20,7 @@ from llm_guard.input_scanners import (
     InvisibleText,
 )
 
+from app.core.constants.search import DEFAULT_SEARCH_PLATFORM
 from app.core.langgraph.tools.mcp import load_researcher_tools
 from app.core.langgraph.tools.research_note import write_research_notes
 from app.core.langgraph.tools.todo import write_todos
@@ -43,8 +44,9 @@ from app.schemas.graph import (
     SearcherOutput,
     SearcherState,
 )
-from app.core.constants.graph import initial_state
+from app.core.constants.graph import INITIAL_STATE
 from app.schemas.todo import Todo
+from app.core.services.logger import logger
 
 
 async def initial(_: AgentState):
@@ -53,7 +55,7 @@ async def initial(_: AgentState):
 
     return {
         # Reset state during each invoke, except resume
-        **initial_state,
+        **INITIAL_STATE,
         "execution_id": execution_id,
     }
 
@@ -204,13 +206,21 @@ async def searcher(
         else None
     }
 
-    _, data = await opa_check(
-        "deep_researcher/search",
-        opa_input,
-        default={"allow": True, "search_platform": "duckduckgo"},
-    )
+    search_platform = None
 
-    tools = await load_researcher_tools(search_platform=data.get("search_platform"))
+    try:
+        _, data = await opa_check(
+            "deep_researcher/search",
+            opa_input,
+        )
+
+        search_platform = data.get("search_platform")
+    except Exception:
+        logger.exception("Fail to fetch search policy")
+
+    tools = await load_researcher_tools(
+        search_platform=search_platform or DEFAULT_SEARCH_PLATFORM
+    )
     tools.append(write_research_notes)
 
     search_agent = create_agent(
