@@ -9,9 +9,4 @@ load_dotenv()
 
 mcp.mount(search_mcp)
 
-if __name__ == "__main__":
-    mcp.run(
-        transport="http",
-        host="0.0.0.0",
-        port=8081,
-    )
+app = mcp.http_app()

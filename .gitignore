@@ -43,3 +43,6 @@ db/
 .deepeval
 .langgraph_api
 tmp/
+
+mcp/certs/key.pem
+mcp/certs/cert.pem

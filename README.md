@@ -17,7 +17,7 @@ A practical implementation of a Deep Researcher agent built with LangGraph, Lang
 - Google: Gemini 3.1 Flash Lite
 
 ### Frameworks & Libraries
-- Python v3.14
+- Python v3.13+
 - LangChain v1.3.9
 - LangGraph v1.2.5
 - FastAPI
@@ -76,9 +76,18 @@ Replace placeholder values with your actual environment variables (e.g., `OPENAI
 
 #### Start the MCP Server
 
+The MCP server runs over HTTPS and needs a local cert the first time. See [mcp/README.md](mcp/README.md) for full details; short version:
+
 ```bash
 cd mcp
-uv run main.py
+uv sync
+openssl req -x509 -newkey rsa:4096 \
+  -keyout certs/key.pem \
+  -out certs/cert.pem \
+  -days 365 \
+  -nodes \
+  -subj "/CN=localhost"
+uvicorn main:app --port 8081 --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem
 ```
 
 #### Start the OPA Server
@@ -98,11 +107,11 @@ uv run fastapi dev
 The backend will be available at:
 
 * **Base URL:** `http://localhost:8000`
-* **Chat API:** `http://localhost:8000/api/v1/chatbot/chat`
-* **Streaming Chat API:** `http://localhost:8000/api/v1/chatbot/chat/stream`
-* **CopilotKit Deep Researcher API:** `http://localhost:8000/copilotkit/deep_researcher/`
+* **CopilotKit Deep Researcher API:** `http://localhost:8000/api/v1/copilotkit/agent/deep_researcher`
 
 > The CopilotKit endpoint can be integrated with CopilotKit using LangGraphHttpAgent. See the CopilotKit LangGraph FastAPI Quickstart for setup instructions: https://docs.copilotkit.ai/langgraph-fastapi/quickstart?agent=bring-your-own
+
+> A plain REST chat API (`/api/v1/chatbot/chat`, `/api/v1/chatbot/chat/stream`) also exists in `app/api/v1/chatbot.py` but its router is currently commented out in `app/api/v1/main.py` — not live unless you re-enable it.
 
 #### Running the Web Application
 
