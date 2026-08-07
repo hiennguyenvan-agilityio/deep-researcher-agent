@@ -44,6 +44,11 @@ openssl req -x509 -newkey rsa:4096 \
   -subj "/CN=localhost"
 ```
 
+Get its SHA-256 fingerprint and set it as `MCP_SEARCH_CERT_SHA256` in the **main app's** `.env` — also point `MCP_SEARCH_CERT_PATH` there at this `cert.pem` (the client pins against both; see [docs/mcp-security.md](../docs/mcp-security.md)):
+```
+openssl x509 -in certs/cert.pem -noout -fingerprint -sha256 | cut -d= -f2 | tr -d ':' | tr 'A-F' 'a-f'
+```
+
 Run the server:
 ```
 uvicorn main:app --port 8081 --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem
@@ -52,3 +57,5 @@ uvicorn main:app --port 8081 --ssl-keyfile certs/key.pem --ssl-certfile certs/ce
 The MCP endpoint is then reachable at `https://localhost:8081/mcp`.
 
 > Note: if the caller's `MCP_SERVER_URL` is set to `http://` instead of `https://`, requests will fail against this SSL-enabled server — keep the scheme in sync on both sides.
+>
+> Whenever `certs/cert.pem` is regenerated (expiry, rotation), `MCP_SEARCH_CERT_SHA256` on the client must be updated too — a stale pin fails closed (`ConnectionError`), it doesn't silently trust the new cert.
