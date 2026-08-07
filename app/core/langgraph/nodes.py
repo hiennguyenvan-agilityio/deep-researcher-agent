@@ -3,7 +3,7 @@ import uuid
 
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
-from langchain.messages import HumanMessage
+from langchain.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END
 from langgraph.types import Command, interrupt
@@ -213,9 +213,7 @@ async def searcher(
 
     search_platform = data.get("search_platform") or DEFAULT_SEARCH_PLATFORM
 
-    tools = await load_researcher_tools(
-        search_platform=search_platform
-    )
+    tools = await load_researcher_tools(search_platform=search_platform)
     tools.append(write_research_notes)
 
     agent_cache_key = (model_name, search_platform)
@@ -298,16 +296,36 @@ async def synthesizer(
         ]
     )
 
-    modifiedConfig = get_node_config(config, emit_messages=True, emit_tool_calls=False)
-
     chain = prompt | llm
 
-    response = await chain.ainvoke(
-        {"messages": state["messages"], "research_note": research_notes},
-        config=modifiedConfig,
-    )
+    message_text = ""
+    message_id = None
 
-    return {"messages": response}
+    async for message in chain.astream(
+        {"messages": state["messages"], "research_note": research_notes},
+        stream_mode="messages",
+        version="v2",
+    ):
+        message_text = message_text + "".join(
+            item.get("text", "")
+            for item in message.content
+            if item.get("type") == "text"
+        )
+        message_id = message.id
+        output_guardrail_enabled = os.getenv("GUARDRAIL_OUTPUT") == "True"
+
+        if (
+            os.getenv("BEDROCK_GUARDRAIL_ID")
+            and output_guardrail_enabled
+            and await apply_guardrail(message_text, "OUTPUT")
+        ):
+            return {
+                "messages": AIMessage(
+                    content="Sorry, I can't share that response — it goes against our content policy."
+                )
+            }
+
+    return {"messages": AIMessage(content=message_text, id=message_id)}
 
 
 async def feedback(_: AgentState, runtime: Runtime[AgentContext]):
