@@ -34,7 +34,7 @@ class PinnedFingerprintTransport(httpx.AsyncHTTPTransport):
         return response
 
 
-class PinnedHttpxClientFactory(McpHttpClientFactory):
+class PinnedFingerprintClientFactory(McpHttpClientFactory):
     """httpx_client_factory pinned to one server's cert/fingerprint.
 
     cafile pins the TLS handshake to one exact self-signed cert — pass None
