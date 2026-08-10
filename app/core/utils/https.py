@@ -2,6 +2,7 @@ import hashlib
 import ssl
 
 import httpx
+from langchain_mcp_adapters.sessions import McpHttpClientFactory
 
 
 class PinnedFingerprintTransport(httpx.AsyncHTTPTransport):
@@ -33,8 +34,8 @@ class PinnedFingerprintTransport(httpx.AsyncHTTPTransport):
         return response
 
 
-def make_pinned_httpx_client_factory(cafile: str | None, cert_sha256: str):
-    """Build an httpx_client_factory pinned to one server's cert/fingerprint.
+class PinnedHttpxClientFactory(McpHttpClientFactory):
+    """httpx_client_factory pinned to one server's cert/fingerprint.
 
     cafile pins the TLS handshake to one exact self-signed cert — pass None
     for a hosted server with a CA-signed cert, where the system trust store
@@ -42,25 +43,28 @@ def make_pinned_httpx_client_factory(cafile: str | None, cert_sha256: str):
     fingerprint check still runs either way, as defense-in-depth.
 
     Each MCP server connection needs its own cafile + fingerprint pair, so
-    this returns a closure rather than taking them as extra args directly —
-    langchain_mcp_adapters calls the factory with exactly
-    (headers, timeout, auth), it can't pass per-server config through.
+    this is instantiated per server rather than shared — langchain_mcp_adapters
+    calls the factory with exactly (headers, timeout, auth), it can't pass
+    per-server config through.
     """
 
-    def factory(
+    def __init__(self, cafile: str | None, cert_sha256: str):
+        self._cafile = cafile
+        self._cert_sha256 = cert_sha256
+
+    def __call__(
+        self,
         headers: dict[str, str] | None = None,
         timeout: httpx.Timeout | None = None,
         auth: httpx.Auth | None = None,
     ) -> httpx.AsyncClient:
-        ssl_context = ssl.create_default_context(cafile=cafile)
+        ssl_context = ssl.create_default_context(cafile=self._cafile)
 
         return httpx.AsyncClient(
             headers=headers,
             timeout=timeout,
             auth=auth,
             transport=PinnedFingerprintTransport(
-                expected_fingerprint=cert_sha256, verify=ssl_context
+                expected_fingerprint=self._cert_sha256, verify=ssl_context
             ),
         )
-
-    return factory

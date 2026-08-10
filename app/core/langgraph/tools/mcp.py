@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from app.core.utils.https import make_pinned_httpx_client_factory
+from app.core.utils.https import PinnedFingerprintClientFactory
 
 load_dotenv()
 
@@ -13,24 +13,6 @@ SearchPlatform = Literal["tavily", "exa", "duckduckgo"]
 
 _tool_cache: dict[SearchPlatform, list] = {}
 _tool_cache_lock = asyncio.Lock()
-
-MCP_SEARCH_CERT_SHA256 = os.environ["MCP_SEARCH_CERT_SHA256"].lower()
-
-# Unset/empty for a hosted server with a CA-signed cert: falls back to the
-# system trust store instead of pinning a local self-signed file.
-MCP_SEARCH_CERT_PATH = os.getenv("MCP_SEARCH_CERT_PATH") or None
-
-client = MultiServerMCPClient(
-    {
-        "mySearchServer": {
-            "transport": "http",
-            "url": os.getenv("MCP_SERVER_URL"),
-            "httpx_client_factory": make_pinned_httpx_client_factory(
-                MCP_SEARCH_CERT_PATH, MCP_SEARCH_CERT_SHA256
-            ),
-        }
-    }
-)
 
 
 def get_tool_tags(tool) -> list[str]:
@@ -49,6 +31,24 @@ async def load_researcher_tools(
         # populated the cache while we were waiting on the lock.
         if not force and (cached := _tool_cache.get(search_platform)):
             return cached
+
+        MCP_SEARCH_CERT_SHA256 = os.environ["MCP_SEARCH_CERT_SHA256"].lower()
+
+        # Unset/empty for a hosted server with a CA-signed cert: falls back to the
+        # system trust store instead of pinning a local self-signed file.
+        MCP_SEARCH_CERT_PATH = os.getenv("MCP_SEARCH_CERT_PATH") or None
+
+        client = MultiServerMCPClient(
+            {
+                "mySearchServer": {
+                    "transport": "http",
+                    "url": os.getenv("MCP_SERVER_URL"),
+                    "httpx_client_factory": PinnedFingerprintClientFactory(
+                        MCP_SEARCH_CERT_PATH, MCP_SEARCH_CERT_SHA256
+                    ),
+                }
+            }
+        )
 
         filtered_tools = [
             tool
