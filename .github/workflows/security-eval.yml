@@ -1,0 +1,27 @@
+name: Security Eval Gate v3
+on:
+  pull_request:
+    paths: ['agent/**','tools/**','policies/**','mcp/**','prompts/**','tests/**']
+  push:
+    branches: [main]
+
+jobs:
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: pip-audit — fail on known CVEs (LLM03 / ASI04)
+        run: pip install pip-audit && pip-audit --fail-on-vuln
+
+  security-gate:
+    needs: supply-chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install eval dependencies
+        run: pip install agentdojo giskard deepeval
+      - name: Run AgentDojo — standard suites
+        run: |
+          python -m agentdojo.scripts.benchmark             --suite injection,tool_misuse,exfiltration,mcp_injection             --output tests/agentdojo_standard.json
