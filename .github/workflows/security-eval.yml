@@ -1,7 +1,7 @@
 name: Security Eval Gate v3
 on:
   pull_request:
-    paths: ['agent/**','tools/**','policies/**','mcp/**','prompts/**','tests/**']
+    paths: ['app/core/langgraph/**','policies/**','mcp/**','app/core/prompts/**','tests/**']
   push:
     branches: [main]
 
@@ -10,10 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install uv package
+        run: pip install uv
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv sync
+      - name: run audit
+        run: uv audit
       - name: pip-audit — fail on known CVEs (LLM03 / ASI04)
-        run: pip install pip-audit && pip-audit --fail-on-vuln
+        run: pip install pip-audit && pip-audit .
 
   security-gate:
     needs: supply-chain
