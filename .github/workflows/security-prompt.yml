@@ -1,0 +1,17 @@
+name: Security Prompt
+on:
+  pull_request:
+    paths: ['app/core/prompts/**','tests/test_prompt_safety.py']
+  push:
+    branches: [main]
+
+jobs:
+  security-prompt:
+    needs: supply-chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv package
+        run: pip install llm-guard
+      - name: Check llm guard 
+        run: python tests/test_prompt_safety.py
