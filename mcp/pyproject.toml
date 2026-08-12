@@ -3,7 +3,10 @@ name = "my-mcp-server"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastmcp>=3.4.3",
+    "langchain-community>=0.4.1",
+    "langchain-exa>=1.1.0",
+    "langchain-tavily>=0.2.18",
 ]
