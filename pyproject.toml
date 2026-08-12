@@ -23,6 +23,14 @@ dependencies = [
     "langgraph-checkpoint-postgres>=3.1.2",
     "llm-guard>=0.3.16",
     "ragas>=0.4.3",
+    # Capped below 81: newer setuptools drops the bundled pkg_resources
+    # shim, and `fs` (PyFilesystem2, 2.4.16 — no newer release exists)
+    # hard-requires it at import time (fs/__init__.py does
+    # `__import__("pkg_resources").declare_namespace(...)`), so anything
+    # >=81 breaks app/core/services/file_system.py. The GHSA-h35f-9h28-mq5c
+    # / PYSEC-2026-3447 CVEs this leaves unpatched are sdist MANIFEST.in
+    # exclusion-bypass bugs relevant to *building* sdists, not to
+    # installing/using already-published dependencies — low relevance here.
     "setuptools<81",
     "supabase>=2.31.0",
 ]
