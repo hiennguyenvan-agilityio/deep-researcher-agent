@@ -1,16 +1,25 @@
 name: Security Prompt
 on:
   pull_request:
-    paths: ['app/core/prompts/**','tests/test_prompt_safety.py']
+    paths: ['app/core/prompts/**','tests/test_prompt_safety.py','tests/test_prompt_guardrail.py']
   push:
     branches: [main]
 
 jobs:
   security-prompt:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      BEDROCK_GUARDRAIL_ID: ${{ secrets.BEDROCK_GUARDRAIL_ID }}
+      BEDROCK_GUARDRAIL_VERSION: ${{ secrets.BEDROCK_GUARDRAIL_VERSION }}
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
-        run: pip install llm-guard
-      - name: Check llm guard 
+        run: pip install llm-guard aioboto3 python-dotenv
+      - name: Check llm-guard
         run: python tests/test_prompt_safety.py
+      - name: Check Bedrock guardrail
+        run: python tests/test_prompt_guardrail.py
