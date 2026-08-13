@@ -6,7 +6,16 @@ on:
     branches: [main]
 
 jobs:
-  security-prompt:
+  llm-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: pip install llm-guard
+      - name: Check llm-guard
+        run: python tests/test_prompt_safety.py
+
+  guardrail:
     runs-on: ubuntu-latest
     environment: test
     env:
@@ -19,8 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
-        run: pip install llm-guard aioboto3 python-dotenv
-      - name: Check llm-guard
-        run: python tests/test_prompt_safety.py
+        run: pip install aioboto3
       - name: Check Bedrock guardrail
         run: python tests/test_prompt_guardrail.py
