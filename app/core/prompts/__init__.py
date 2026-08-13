@@ -7,10 +7,6 @@ REQUEST_TOO_LONG_SUB_PROMPT = Path(
     f"{current_file_folder}/request_too_long.md"
 ).read_text(encoding="utf-8")
 
-GATEKEEPER_PROMPT = Path(f"{current_file_folder}/gatekeeper.md").read_text(
-    encoding="utf-8"
-)
-
 ORCHESTRATOR_PROMPT = Path(f"{current_file_folder}/orchestrator.md").read_text(
     encoding="utf-8"
 )
